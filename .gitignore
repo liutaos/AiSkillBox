@@ -25,7 +25,8 @@ stderr.txt
 # 文档（非必要）
 *.md
 !README.md
-docs/
+docs/*.md
+!docs/*.png
 DESIGN.md
 PLAN.md
 PROJECT.md

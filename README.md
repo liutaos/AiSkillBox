@@ -2,6 +2,12 @@
 
 自动注册和管理 AI Skill 的 MCP 服务。
 
+## 界面预览
+
+| 桌面 GUI | Web 管理后台 |
+|:--------:|:------------:|
+| ![桌面GUI](docs/gui.png) | ![Web后台](docs/web-admin.png) |
+
 ## 核心功能
 
 1. **自动注册 Skill**
