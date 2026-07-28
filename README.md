@@ -4,9 +4,7 @@
 
 ## 界面预览
 
-| 桌面 GUI | Web 管理后台 |
-|:--------:|:------------:|
-| ![桌面GUI](docs/gui.png) | ![Web后台](docs/web-admin.png) |
+![桌面GUI](docs/AISkillBox.png)
 
 ## 核心功能
 
