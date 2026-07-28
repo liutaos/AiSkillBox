@@ -1,3 +1,6 @@
+// Copyright (c) Mr_老鬼. All rights reserved.
+// https://www.junjiestudio.top
+
 use salvo::affix_state;
 use salvo::prelude::*;
 use salvo::serve_static::StaticDir;

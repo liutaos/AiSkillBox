@@ -1,3 +1,6 @@
+// Copyright (c) Mr_老鬼. All rights reserved.
+// https://www.junjiestudio.top
+
 pub mod file_handler;
 
 use std::collections::HashMap;

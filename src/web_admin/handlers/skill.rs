@@ -1,3 +1,6 @@
+// Copyright (c) Mr_老鬼. All rights reserved.
+// https://www.junjiestudio.top
+
 use salvo::prelude::*;
 use serde::Deserialize;
 use std::sync::Arc;

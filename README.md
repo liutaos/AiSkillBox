@@ -1,5 +1,7 @@
 # AI 技能百宝箱 (AISkillBox)
 
+[English](#english) | 中文
+
 自动注册和管理 AI Skill 的 MCP 服务。
 
 ## 界面预览
@@ -91,3 +93,103 @@ level = "info"
 ```
 
 配置完成后，直接对 AI 说"帮我列出所有 skill"即可。
+
+---
+
+# English
+
+Auto-register and manage AI Skills via MCP service.
+
+## Screenshot
+
+![Desktop GUI](docs/AISkillBox.png)
+
+## Features
+
+1. **Auto-register Skills**
+   - Scan skills directory
+   - Parse SKILL.md YAML front matter
+   - Auto-register as MCP tools
+
+2. **Manage Skills**
+   - List registered skills
+   - Enable/Disable skills
+   - Delete/Restore (trash)
+   - Search & filter
+
+3. **Multiple Management Options**
+   - AI chat management (recommended): manage via Cursor, Claude, etc.
+   - Desktop GUI: `AISkillBox.exe`
+   - Web admin: `http://127.0.0.1:10882/web-admin/`
+
+## Files
+
+| File | Description |
+|------|-------------|
+| `AISkillBox-mcp.exe` | MCP server (port 10881) + Web Admin (port 10882) |
+| `AISkillBox.exe` | Desktop management client |
+
+## Directory Structure
+
+```
+AISkillBox/
+├── skills/                    # skills directory
+│   ├── easyclick-android/
+│   │   └── SKILL.md
+│   ├── easyclick-ios/
+│   │   └── SKILL.md
+│   └── ...
+├── skill-trash/               # trash
+├── config.toml                # config file
+├── skills.db                  # SQLite database
+├── public/                    # usage page
+└── web-admin/                 # Web admin panel
+```
+
+## Configuration
+
+```toml
+listen_addr = "127.0.0.1:10882"
+mcp_listen_addr = "127.0.0.1:10881"
+
+[mcp]
+tools_path = "tools"
+skills_dir = "skills"
+
+[log]
+level = "info"
+```
+
+## MCP Tools
+
+| Tool | Description |
+|------|-------------|
+| `list_skills` | List all skills |
+| `search_skills` | Search skills |
+| `enable_skill` | Enable a skill |
+| `disable_skill` | Disable a skill |
+| `delete_skill` | Delete skill (move to trash) |
+| `restore_skill` | Restore from trash |
+| `list_trash` | View trash |
+| `refresh_skills` | Refresh skill list |
+| `migrate_skills` | Migration guide |
+
+## AI Chat Setup
+
+Add to Cursor's `mcp.json` or Claude's `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "skill-manager": {
+      "url": "http://127.0.0.1:10881/mcp"
+    }
+  }
+}
+```
+
+Once configured, just ask the AI: "list all my skills".
+
+---
+
+**Author: Mr_老鬼** | QQ: 1156346325 | B站: Mr_老鬼 | Website: https://www.junjiestudio.top

@@ -1,3 +1,6 @@
+// Copyright (c) Mr_老鬼. All rights reserved.
+// https://www.junjiestudio.top
+
 use std::sync::Arc;
 use tracing::info;
 use crate::db::{SkillDb, SkillStore};

@@ -1,3 +1,6 @@
+// Copyright (c) Mr_老鬼. All rights reserved.
+// https://www.junjiestudio.top
+
 use std::process::Command;
 use std::os::windows::process::CommandExt;
 use tracing::info;

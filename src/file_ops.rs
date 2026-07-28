@@ -1,3 +1,6 @@
+// Copyright (c) Mr_老鬼. All rights reserved.
+// https://www.junjiestudio.top
+
 use std::path::{Path, PathBuf};
 
 pub fn read_config_port(exe_dir: &Path) -> String {
