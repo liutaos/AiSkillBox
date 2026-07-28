@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 技能百宝箱</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; }
+        .container { max-width: 720px; width: 100%; }
+        h1 { font-size: 28px; font-weight: 600; margin-bottom: 8px; color: #fff; }
+        h2 { font-size: 18px; font-weight: 600; color: #fff; margin-bottom: 12px; }
+        h3 { font-size: 15px; font-weight: 600; color: #ccc; margin-bottom: 8px; margin-top: 16px; }
+        .subtitle { color: #888; font-size: 14px; margin-bottom: 32px; }
+        .card { background: #1a1d27; border: 1px solid #2a2d3a; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+        .card p, .card li { font-size: 14px; line-height: 1.8; color: #bbb; }
+        .card ul, .card ol { padding-left: 20px; }
+        .card li { margin-bottom: 4px; }
+        code { background: #2a2d3a; padding: 2px 6px; border-radius: 4px; font-size: 13px; color: #7dd3fc; font-family: 'Cascadia Code', 'Fira Code', monospace; }
+        pre { background: #1e2028; border: 1px solid #2a2d3a; border-radius: 6px; padding: 12px; overflow-x: auto; font-size: 13px; line-height: 1.6; color: #c9d1d9; font-family: 'Cascadia Code', 'Fira Code', monospace; margin-top: 8px; margin-bottom: 8px; }
+        .links { display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+        .links a { display: inline-block; padding: 8px 16px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 6px; font-size: 14px; transition: background 0.2s; }
+        .links a:hover { background: #1d4ed8; }
+        .links a.secondary { background: #2a2d3a; color: #bbb; }
+        .links a.secondary:hover { background: #3a3d4a; }
+        .links a.green { background: #16a34a; }
+        .links a.green:hover { background: #15803d; }
+        .port { display: inline-block; background: #16a34a; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 13px; font-weight: 500; }
+        .tool-name { display: inline-block; background: #1e3a5f; color: #7dd3fc; padding: 1px 8px; border-radius: 4px; font-size: 13px; font-family: 'Cascadia Code', 'Fira Code', monospace; }
+        .tool-desc { color: #888; font-size: 13px; margin-left: 4px; }
+        .tool-item { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #2a2d3a; }
+        .tool-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+        .badge-blue { background: #1e3a5f; color: #60a5fa; }
+        .badge-green { background: #14532d; color: #4ade80; }
+        .badge-yellow { background: #422006; color: #facc15; }
+        .badge-red { background: #450a0a; color: #f87171; }
+        .section-title { font-size: 20px; font-weight: 600; color: #fff; margin: 32px 0 16px 0; padding-bottom: 8px; border-bottom: 1px solid #2a2d3a; }
+        .step { display: flex; gap: 12px; margin-bottom: 16px; }
+        .step-num { flex-shrink: 0; width: 28px; height: 28px; background: #2563eb; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; }
+        .step-content { flex: 1; }
+        .step-content p { margin-bottom: 4px; }
+        .faq-item { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #2a2d3a; }
+        .faq-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .faq-q { font-weight: 600; color: #fff; margin-bottom: 6px; font-size: 14px; }
+        .faq-a { color: #bbb; font-size: 14px; line-height: 1.7; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AI 技能百宝箱</h1>
+        <p class="subtitle">自动注册和管理 AI Skill 的 MCP 服务</p>
+
+        <!-- 服务状态 -->
+        <div class="card">
+            <h2>服务状态</h2>
+            <p>Web 后台：<span class="port">10882</span> &nbsp;&nbsp; MCP 服务：<span class="port">10881</span></p>
+            <div class="links">
+                <a href="/web-admin/" class="green">管理后台</a>
+                <a href="/api/admin/skills" class="secondary">Skill 列表 API</a>
+            </div>
+        </div>
+
+        <!-- 快速开始 -->
+        <div class="section-title">快速开始</div>
+        <div class="card">
+            <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-content">
+                    <p><strong>配置 AI 客户端</strong></p>
+                    <p>复制以下配置，发给你的 AI 助手让它帮你配，或手动添加到 MCP 配置文件中：</p>
+<pre>{
+  "mcpServers": {
+    "AISkillBox": {
+      "url": "http://127.0.0.1:10881/mcp"
+    }
+  }
+}</pre>
+                    <p style="font-size:13px;color:#888;margin-top:4px;">配置文件位置因客户端而异，AI 助手会自动识别。</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-content">
+                    <p><strong>开始使用</strong></p>
+                    <p>重启 AI 客户端，直接对话即可管理 Skill：</p>
+                    <ul>
+                        <li>"列出所有 skill"</li>
+                        <li>"搜索跟你技能相关的内容"</li>
+                        <li>"禁用 xxx skill"</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 三种管理方式 -->
+        <div class="section-title">管理方式</div>
+        <div class="card" style="display: flex; gap: 20px;">
+            <div style="flex:1;">
+                <h3><span class="badge badge-blue">AI</span> 对话管理</h3>
+                <p>配置 MCP 后，通过 Cursor、Claude 等 AI 助手直接对话管理。推荐方式。</p>
+            </div>
+            <div style="flex:1;">
+                <h3><span class="badge badge-green">GUI</span> 桌面客户端</h3>
+                <p>双击 <code>AISkillBox.exe</code>，图形化界面管理所有 Skill。</p>
+            </div>
+            <div style="flex:1;">
+                <h3><span class="badge badge-yellow">Web</span> 管理后台</h3>
+                <p>浏览器访问 <a href="/web-admin/" style="color:#60a5fa;">管理后台</a>，在线操作。</p>
+            </div>
+        </div>
+
+        <!-- MCP 工具 -->
+        <div class="section-title">MCP 工具</div>
+        <div class="card">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 24px;">
+                <div class="tool-item">
+                    <p><span class="tool-name">list_skills</span></p>
+                    <p style="font-size:13px;color:#888;">列出所有 Skill</p>
+                </div>
+                <div class="tool-item">
+                    <p><span class="tool-name">search_skills</span></p>
+                    <p style="font-size:13px;color:#888;">搜索 Skill</p>
+                </div>
+                <div class="tool-item">
+                    <p><span class="tool-name">enable_skill</span></p>
+                    <p style="font-size:13px;color:#888;">启用 Skill</p>
+                </div>
+                <div class="tool-item">
+                    <p><span class="tool-name">disable_skill</span></p>
+                    <p style="font-size:13px;color:#888;">禁用 Skill</p>
+                </div>
+                <div class="tool-item">
+                    <p><span class="tool-name">delete_skill</span></p>
+                    <p style="font-size:13px;color:#888;">删除（移入回收站）</p>
+                </div>
+                <div class="tool-item">
+                    <p><span class="tool-name">restore_skill</span></p>
+                    <p style="font-size:13px;color:#888;">从回收站恢复</p>
+                </div>
+                <div class="tool-item">
+                    <p><span class="tool-name">list_trash</span></p>
+                    <p style="font-size:13px;color:#888;">查看回收站</p>
+                </div>
+                <div class="tool-item">
+                    <p><span class="tool-name">refresh_skills</span></p>
+                    <p style="font-size:13px;color:#888;">刷新 Skill 列表</p>
+                </div>
+                <div class="tool-item">
+                    <p><span class="tool-name">migrate_skills</span></p>
+                    <p style="font-size:13px;color:#888;">迁移指引</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 目录结构 -->
+        <div class="section-title">目录结构</div>
+        <div class="card">
+<pre>AISkillBox/
+├── skills/          # Skill 存放目录
+├── skill-trash/     # 回收站
+├── public/          # 本说明页
+├── web-admin/       # Web 管理后台
+├── config.toml      # 配置文件
+└── skills.db        # SQLite 数据库</pre>
+        </div>
+
+        <!-- 常见问题 -->
+        <div class="section-title">常见问题</div>
+        <div class="card">
+            <div class="faq-item">
+                <p class="faq-q">Q: 服务未运行 / 双击没反应</p>
+                <p class="faq-a">检查端口是否被占用（见下方）。确认 <code>AISkillBox-mcp.exe</code> 和 <code>AISkillBox.exe</code> 在同一目录。以管理员身份尝试启动。</p>
+            </div>
+            <div class="faq-item">
+                <p class="faq-q">Q: 启动失败 / 闪退</p>
+                <p class="faq-a">可能是 <code>skills.db</code> 损坏，删除后重启会自动重建。也可能是 <code>config.toml</code> 格式错误，检查后修正。</p>
+            </div>
+            <div class="faq-item">
+                <p class="faq-q">Q: 端口占用 (10881 / 10882)</p>
+                <p class="faq-a">运行 <code>netstat -ano | findstr 10881</code> 查找占用进程，<code>taskkill /PID &lt;pid&gt; /F</code> 终止。或修改 <code>config.toml</code> 中的端口号。</p>
+            </div>
+            <div class="faq-item">
+                <p class="faq-q">Q: AI 客户端连不上 MCP 服务</p>
+                <p class="faq-a">确认 <code>AISkillBox-mcp.exe</code> 正在运行。确认配置的端口（默认 10881）和地址（<code>http://127.0.0.1:10881/mcp</code>）正确。重启 AI 客户端。</p>
+            </div>
+            <div class="faq-item">
+                <p class="faq-q">Q: Skill 没有出现在列表中</p>
+                <p class="faq-a">确保 Skill 放在 <code>skills/</code> 目录下，且包含 <code>SKILL.md</code> 文件（需有 YAML front matter）。点击"刷新"或调用 <code>refresh_skills</code>。</p>
+            </div>
+            <div class="faq-item">
+                <p class="faq-q">Q: 删除的 Skill 如何恢复</p>
+                <p class="faq-a">通过 Web 后台"回收站"页面恢复，或调用 <code>restore_skill</code> 工具。永久删除需在回收站中操作。</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

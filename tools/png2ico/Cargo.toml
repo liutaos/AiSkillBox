@@ -1,0 +1,11 @@
+[package]
+name = "png2ico"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "png2ico"
+path = "src/main.rs"
+
+[dependencies]
+image = "0.25"

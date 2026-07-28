@@ -1,0 +1,12 @@
+listen_addr = "127.0.0.1:10882"
+mcp_listen_addr = "127.0.0.1:10881"
+db_path = ""
+
+[mcp]
+# 工具配置目录（可选，保留兼容）
+tools_path = "tools"
+# Skills 目录（和 exe 同级）
+skills_dir = "skills"
+
+[log]
+level = "info"

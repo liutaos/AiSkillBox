@@ -1,0 +1,45 @@
+# Rust 编译产物
+/target/
+
+# png2ico 工具编译产物
+/tools/png2ico/target/
+
+# 数据库文件
+*.db
+*.db-shm
+*.db-wal
+
+# 发布包
+release-pkg/
+*.zip
+
+# Windows 资源文件（编译时生成）
+build.rs
+assets/logo.ico
+assets/icon.rc
+
+# 调试输出
+stdout.txt
+stderr.txt
+
+# 文档（非必要）
+*.md
+!README.md
+docs/
+DESIGN.md
+PLAN.md
+PROJECT.md
+GUI_REFACTOR_PLAN.md
+REFACTOR_PLAN.md
+blog-mcp-architecture.md
+
+# Web 前端
+web-admin/node_modules/
+web-admin/dist/
+web-admin/.vscode/
+
+# 字体
+fonts/
+
+# PDB 调试符号
+*.pdb

@@ -1,0 +1,89 @@
+[package]
+name = "skill-manager-mcp"
+version = "1.1.0"
+edition = "2024"
+rust-version = "1.89"
+description = "自动注册和管理 Skill 的 MCP 服务"
+
+[dependencies]
+# MCP 协议（官方 SDK）
+rmcp = { version = "2.0.0", features = [
+    "server",
+    "transport-streamable-http-server",
+    "transport-io",
+    "macros",
+] }
+
+# 异步运行时
+tokio = { version = "1", features = ["full"] }
+
+# HTTP 框架
+axum = "0.8"
+
+# 序列化
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# 配置
+figment = { version = "0.10", features = ["env", "toml"] }
+
+# 日志
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = [
+    "std",
+    "fmt",
+    "env-filter",
+] }
+
+# Skills 扫描
+walkdir = "2"
+yaml-rust2 = "0.11.0"
+
+# SQLite
+rusqlite = { version = "0.37.0", features = ["bundled"] }
+
+# GUI (egui)
+eframe = { version = "0.33.3", features = ["default"] }
+egui_extras = { version = "0.33.3", features = ["serde"] }
+
+# 网络请求
+reqwest = { version = "0.13.4", features = ["blocking", "json"] }
+
+# 文件选择
+rfd = "0.17.2"
+
+# Windows
+winreg = "0.56.0"
+windows = { version = "0.61.3", features = [
+    "Win32_Foundation",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
+# 系统托盘
+tray-icon = "0.24.1"
+muda = "0.19.3"
+
+# 图标加载
+image = "0.25"
+
+# Web 框架（REST API）
+salvo = { version = "0.95.0", features = ["affix-state", "serve-static"] }
+
+# 窗口句柄（eframe 已依赖，这里显式引用以避免版本漂移）
+raw-window-handle = "0.6"
+
+[profile.release]
+strip = true
+lto = true
+opt-level = "z"
+
+[target.'cfg(windows)'.build-dependencies]
+winres = "0.1"
+
+[[bin]]
+name = "AISkillBox-mcp"
+path = "src/main.rs"
+
+[[bin]]
+name = "AISkillBox"
+path = "src/gui.rs"
