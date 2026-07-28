@@ -1,3 +1,7 @@
+# Copyright (c) Mr_老鬼. All rights reserved.
+# https://www.junjiestudio.top
+# Derivative works must retain this copyright notice.
+
 listen_addr = "127.0.0.1:10882"
 mcp_listen_addr = "127.0.0.1:10881"
 db_path = ""
