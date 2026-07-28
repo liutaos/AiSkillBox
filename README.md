@@ -192,4 +192,20 @@ Once configured, just ask the AI: "list all my skills".
 
 ---
 
+## 开源协议与版权
+
+Copyright (c) Mr_老鬼. All rights reserved.
+
+本项目采用自定义版权协议，允许自由使用、修改和分发，但 **二开或衍生作品必须保留原始版权声明和出处链接**。
+
+---
+
+## License
+
+Copyright (c) Mr_老鬼. All rights reserved.
+
+This project allows free use, modification, and distribution, but **derivative works must retain the original copyright notice and attribution link**.
+
+---
+
 **Author: Mr_老鬼** | QQ: 1156346325 | B站: Mr_老鬼 | Website: https://www.junjiestudio.top
