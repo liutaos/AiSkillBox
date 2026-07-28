@@ -8,7 +8,6 @@ use rmcp::{
 
 use crate::tools::manager::ToolManager;
 
-/// MCP 服务器处理器
 #[derive(Clone)]
 pub struct EcMcpHandler {
     manager: ToolManager,
@@ -60,14 +59,11 @@ impl ServerHandler for EcMcpHandler {
                 params.arguments.unwrap_or_default(),
             );
 
-            // 获取执行器并执行工具
             let executor = self.manager.executor().await;
             let result = executor.execute(tool_name, args).await;
 
-            // 检查是否需要刷新工具列表
             if let Ok(Some(_count)) = self.manager.check_and_reload().await {
                 tracing::info!("工具列表已刷新，当前 {} 个工具", _count);
-                // 返回刷新后的工具列表
                 let tools = self.manager.get_tools().await;
                 let tool_list: Vec<String> = tools.iter().map(|t| {
                     format!("- {} - {}", t.name, t.description.as_deref().unwrap_or(""))
@@ -77,7 +73,6 @@ impl ServerHandler for EcMcpHandler {
                 )]));
             }
 
-            // 返回原始执行结果
             match result {
                 Ok(data) => {
                     Ok(CallToolResult::success(vec![ContentBlock::text(

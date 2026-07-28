@@ -176,30 +176,6 @@ pub fn copy_skill_dir(src: &Path, dst: &Path) -> Result<(), String> {
     copy_dir_all(src, dst).map_err(|e| format!("复制失败: {}", e))
 }
 
-pub fn move_to_trash(skill_dir: &Path) -> Result<(), String> {
-    let parent = skill_dir.parent().unwrap_or(skill_dir);
-    let trash_dir = parent.join("skill-trash");
-    std::fs::create_dir_all(&trash_dir).ok();
-    
-    let dir_name = skill_dir.file_name().unwrap_or_default();
-    let dest = trash_dir.join(dir_name);
-    
-    if dest.exists() {
-        let ts = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
-        let new_name = format!("{}_{}", dir_name.to_string_lossy(), ts);
-        let dest = trash_dir.join(&new_name);
-        std::fs::rename(skill_dir, &dest)
-            .map_err(|e| format!("移动到回收站失败: {}", e))?;
-    } else {
-        std::fs::rename(skill_dir, &dest)
-            .map_err(|e| format!("移动到回收站失败: {}", e))?;
-    }
-    Ok(())
-}
-
 fn get_exe_dir() -> PathBuf {
     std::env::current_exe()
         .ok()

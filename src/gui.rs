@@ -9,8 +9,8 @@ use std::path::PathBuf;
 use std::rc::Rc;
 
 use skill_manager_mcp::management::service_ctrl;
+use skill_manager_mcp::tools::skill_scanner;
 
-// 检测 Windows 系统是否为深色模式
 #[cfg(windows)]
 fn detect_windows_dark_mode() -> bool {
     use winreg::enums::HKEY_CURRENT_USER;
@@ -30,8 +30,6 @@ fn detect_windows_dark_mode() -> bool {
 #[cfg(not(windows))]
 fn detect_windows_dark_mode() -> bool { true }
 
-// 从 eframe CreationContext 中提取 Windows 窗口句柄，返回原始 isize 值。
-// HWND 本身不是 Send/Sync，无法直接捕获到 muda 事件回调中，所以保存为整数。
 #[cfg(windows)]
 fn get_hwnd_value(cc: &eframe::CreationContext<'_>) -> Option<isize> {
     use raw_window_handle::{HasWindowHandle, RawWindowHandle};
@@ -42,9 +40,8 @@ fn get_hwnd_value(cc: &eframe::CreationContext<'_>) -> Option<isize> {
     }
 }
 
-// ── 数据结构 ──
-
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct SkillEntry {
     name: String,
     description: String,
@@ -54,7 +51,6 @@ struct SkillEntry {
 }
 
 struct App {
-    // 服务控制
     port: String,
     web_port: String,
     listen_host: String,
@@ -63,40 +59,32 @@ struct App {
     status_msg: String,
     status_time: f64,
 
-    // Skill 列表
     skills: Vec<SkillEntry>,
     skills_dir: PathBuf,
 
-    // 导入弹窗
     show_import_window: bool,
     popup_close_flag: Rc<Cell<bool>>,
     import_log: Rc<RefCell<Vec<String>>>,
     import_pending_paths: Rc<RefCell<Vec<std::path::PathBuf>>>,
-    import_refresh_flag: Rc<Cell<bool>>,  // 通知主窗口刷新
-    // 弹窗内的临时输入状态
+    import_refresh_flag: Rc<Cell<bool>>,
     import_name: String,
     import_tags: String,
     import_note: String,
     import_save_as_skill: bool,
     imported_count: usize,
-    // 删除确认
     show_delete_confirm: bool,
     delete_target: String,
-    // 系统托盘
     use_tray: bool,
     tray_icon: Option<tray_icon::TrayIcon>,
     tray_open_id: muda::MenuId,
     tray_exit_id: muda::MenuId,
-    // 主题覆盖: None=跟随系统, Some(true)=强制深色, Some(false)=强制浅色
     dark_mode_override: Option<bool>,
-    // Windows 窗口句柄原始值，用于在 egui 事件循环休眠时直接操作窗口显示/隐藏
     #[cfg(windows)]
     hwnd: Option<isize>,
 }
 
 impl App {
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        let _ctx = &cc.egui_ctx;
         let exe_dir = std::env::current_exe()
             .ok()
             .and_then(|e| e.parent().map(|p| p.to_path_buf()))
@@ -105,20 +93,16 @@ impl App {
         let skills_dir = exe_dir.join("skills");
         std::fs::create_dir_all(&skills_dir).ok();
 
-        // 读取 config.toml 获取端口和托盘设置
         let port = file_ops::read_config_port(&exe_dir);
         let web_port = file_ops::read_config_web_port(&exe_dir);
         let listen_host = file_ops::read_config_listen_host(&exe_dir);
         let use_tray = file_ops::read_config_use_tray(&exe_dir);
         let dark_mode_override = file_ops::read_config_dark_mode_override(&exe_dir);
 
-        // 初始化 API 客户端地址
         api_client::init_base_url(&format!("{}:{}", listen_host, web_port));
 
-        // 读取注册表自启动状态
         let auto_start = file_ops::read_auto_start();
 
-        // 检测服务是否运行，未运行则自动启动
         let mut service_running = service_ctrl::check_service_running();
         if !service_running {
             let _ = service_ctrl::start_service(&exe_dir);
@@ -126,16 +110,13 @@ impl App {
             service_running = service_ctrl::check_service_running();
         }
 
-        // 直接扫描目录获取技能列表
         let skills = Self::scan_local_skills_static(&skills_dir);
 
-        // Windows 下获取主窗口句柄原始值，用于在 egui 休眠时直接操作窗口
         #[cfg(windows)]
         let hwnd = get_hwnd_value(cc);
         #[cfg(not(windows))]
         let hwnd: Option<()> = None;
 
-        // 创建托盘图标（如果启用）
         let (tray_icon, tray_open_id, tray_exit_id) = if use_tray {
             match create_tray_icon() {
                 Ok((icon, open_id, exit_id)) => (Some(icon), open_id, exit_id),
@@ -153,9 +134,6 @@ impl App {
             )
         };
 
-        // 注册托盘菜单事件处理器：muda 在独立线程派发事件。
-        // 由于 eframe 在窗口隐藏后会停止调用 update()，所以事件处理必须
-        // 在回调中直接调用 Win32 API / process::exit，不能依赖 egui 事件循环。
         let open_id_for_handler = tray_open_id.clone();
         let exit_id_for_handler = tray_exit_id.clone();
         let hwnd_for_handler = hwnd;
@@ -170,7 +148,6 @@ impl App {
                     if let Some(hwnd_value) = hwnd_for_handler {
                         let hwnd = HWND(hwnd_value as *mut core::ffi::c_void);
                         unsafe {
-                            // SW_RESTORE 会还原最小化/隐藏的窗口并激活
                             let _ = ShowWindow(hwnd, SW_RESTORE);
                             let _ = SetForegroundWindow(hwnd);
                         }
@@ -241,13 +218,6 @@ impl App {
         }
         self.service_running = false;
         self.status_msg = "服务已停止".to_string();
-    }
-
-    fn restart_service(&mut self) {
-        self.status_msg = "正在重启...".to_string();
-        self.stop_service();
-        std::thread::sleep(std::time::Duration::from_millis(500));
-        self.start_service();
     }
 
     fn set_status(&mut self, msg: &str, ctx: &egui::Context) {
@@ -331,7 +301,7 @@ impl App {
                     continue;
                 }
                 if let Ok(content) = std::fs::read_to_string(&skill_file) {
-                    let (name, description, tags) = parse_front_matter(&content);
+                    let (name, description, tags) = skill_scanner::parse_front_matter(&content);
                     let dir_name = path.file_name()
                         .and_then(|n| n.to_str())
                         .unwrap_or("")
@@ -381,39 +351,6 @@ impl App {
         // 调用API删除（API会移动文件到回收站 + 更新数据库）
         let _ = api_client::delete_skill(name);
         self.skills.retain(|s| s.name != name);
-    }
-
-    fn import_path(&mut self, path: &std::path::Path) {
-        let name = path
-            .file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("unknown")
-            .to_string();
-        let mut log = self.import_log.borrow_mut();
-        let mut imported = false;
-
-        if path.is_dir() {
-            let dest = self.skills_dir.join(&name);
-            match file_ops::copy_skill_dir(path, &dest) {
-                Ok(_) => {
-                    log.push(format!("[成功] {} 导入完成", name));
-                    self.imported_count += 1;
-                    imported = true;
-                }
-                Err(e) => {
-                    log.push(format!("[失败] {}", e));
-                }
-            }
-        } else {
-            // 只导入目录，忽略文件
-            log.push(format!("[跳过] {} 不是目录，跳过", name));
-        }
-        
-        // 导入成功后立即刷新列表
-        if imported {
-            drop(log);
-            self.refresh_skills();
-        }
     }
 
     fn apply_dark_theme(&self, ctx: &egui::Context) {
@@ -495,9 +432,6 @@ impl App {
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        // ── 关闭按钮：托盘模式下隐藏而不退出 ──
-        // 用 Win32 ShowWindow(SW_HIDE) 代替 ViewportCommand::Visible(false)，
-        // 避免 eframe 隐藏窗口后停止处理事件导致托盘无法唤醒。
         if self.use_tray && self.tray_icon.is_some() {
             let close_requested = ctx.input(|i| i.viewport().close_requested());
             if close_requested {
@@ -514,13 +448,11 @@ impl eframe::App for App {
             }
         }
 
-        // 导入弹窗通知刷新
         if self.import_refresh_flag.get() {
             self.import_refresh_flag.set(false);
             self.refresh_skills();
         }
 
-        // 检测系统主题并应用对应配色
         let is_dark = match self.dark_mode_override {
             Some(v) => v,
             None => detect_windows_dark_mode(),
@@ -531,9 +463,7 @@ impl eframe::App for App {
             self.apply_light_theme(ctx);
         }
 
-        // ── 顶部标题栏 ──
         egui::TopBottomPanel::top("top").show(ctx, |ui| {
-            // 3秒后自动清除状态消息
             if !self.status_msg.is_empty() {
                 let now = ctx.input(|i| i.time);
                 if now - self.status_time > 3.0 {
@@ -564,12 +494,10 @@ impl eframe::App for App {
             });
         });
 
-        // ── 主内容区 ──
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.vertical(|ui| {
                 ui.add_space(12.0);
 
-                // ── 卡片1+2：MCP 服务控制 + 系统设置 ──
                 let (card_bg, card_border) = if is_dark {
                     (egui::Color32::from_rgb(28, 31, 38), egui::Color32::from_rgb(50, 55, 68))
                 } else {
@@ -582,10 +510,8 @@ impl eframe::App for App {
                     .inner_margin(egui::Margin::same(16));
                 let available_w = ui.available_width();
                 if available_w > 500.0 {
-                    // 固定两张卡片高度一致，避免内容多寡导致底部不齐
                     let card_h = 120.0;
                     ui.columns(2, |cols| {
-                        // 左列：MCP 服务控制
                         cols[0].set_min_height(card_h);
                         cols[0].set_max_height(card_h);
                         card_frame.clone().show(&mut cols[0], |ui| {
@@ -652,7 +578,6 @@ impl eframe::App for App {
                                 }
                             });
                         });
-                        // 右列：系统设置
                         cols[1].set_min_height(card_h);
                         cols[1].set_max_height(card_h);
                         card_frame.clone().show(&mut cols[1], |ui| {
@@ -712,7 +637,6 @@ impl eframe::App for App {
                         });
                     });
                 } else {
-                    // 窄屏：上下排布
                     card_frame.clone().show(ui, |ui| {
                         ui.strong("MCP 服务控制");
                         ui.add_space(8.0);
@@ -831,7 +755,6 @@ impl eframe::App for App {
 
                 ui.add_space(12.0);
 
-                // ── 卡片3：Skill 管理 ──
                 egui::Frame::NONE
                     .fill(card_bg)
                     .corner_radius(6.0)
@@ -871,7 +794,6 @@ impl eframe::App for App {
                             egui::ScrollArea::vertical()
                                 .auto_shrink([false, false])
                                 .show(ui, |ui| {
-                                    // 表头
                                     ui.horizontal(|ui| {
                                         ui.label(
                                             egui::RichText::new("技能名称").strong().size(12.0),
@@ -896,7 +818,6 @@ impl eframe::App for App {
                                             };
 
                                         ui.vertical(|ui| {
-                                            // 第一行：名称 + 操作按钮
                                             ui.horizontal(|ui| {
                                                 ui.label(
                                                     egui::RichText::new(&skill_name)
@@ -921,8 +842,7 @@ impl eframe::App for App {
                                                             self.show_delete_confirm = true;
                                                             self.delete_target = skill_name.clone();
                                                         }
-                                                        // 自定义开关
-                                                        let mut enabled = self.skills[idx].enabled;
+                                                        let enabled = self.skills[idx].enabled;
                                                         let (bg, label, text_color) = if enabled {
                                                             (
                                                                 egui::Color32::from_rgb(
@@ -962,7 +882,6 @@ impl eframe::App for App {
                                                     },
                                                 );
                                             });
-                                            // 第二行：描述
                                             ui.label(
                                                 egui::RichText::new(&skill_desc).small().weak(),
                                             );
@@ -981,7 +900,6 @@ impl eframe::App for App {
             });
         });
 
-        // ── 删除确认弹窗 ──
         if self.show_delete_confirm {
             let mut confirmed = false;
             let mut cancelled = false;
@@ -1068,7 +986,6 @@ impl eframe::App for App {
             }
         }
 
-        // ── 导入弹窗：独立原生窗口 ──
         if self.show_import_window {
             let popup_id = egui::ViewportId::from_hash_of("import_skill_popup");
             let log = self.import_log.clone();
@@ -1097,10 +1014,8 @@ impl eframe::App for App {
                         return;
                     }
 
-                    // ★ 在回调最前面一次性读取拖拽文件（避免被消费）
                     let dropped = ctx.input(|i| i.raw.dropped_files.clone());
                     let is_dragging = ctx.input(|i| !i.raw.hovered_files.is_empty());
-                    // 拖拽时只记录路径，不复制
                     if !dropped.is_empty() {
                         let mut pending = import_pending_paths.borrow_mut();
                         let mut log = log.borrow_mut();
@@ -1110,7 +1025,6 @@ impl eframe::App for App {
                                     .and_then(|n| n.to_str())
                                     .unwrap_or("unknown")
                                     .to_string();
-                                // 检查是否已存在
                                 let dest = skills_dir.join(&name);
                                 if dest.exists() {
                                     log.push(format!("→ {} 已存在，跳过", name));
@@ -1126,7 +1040,6 @@ impl eframe::App for App {
                         ui.heading("导入 Skill");
                         ui.separator();
 
-                        // 拖拽上传区
                         let drop_size = egui::vec2(ui.available_width(), 100.0);
                         let (drop_rect, drop_resp) =
                             ui.allocate_exact_size(drop_size, egui::Sense::hover());
@@ -1156,7 +1069,6 @@ impl eframe::App for App {
                             egui::Color32::from_rgb(120, 120, 120),
                         );
 
-                        // 显示目标目录
                         ui.add_space(4.0);
                         ui.horizontal(|ui| {
                             ui.label(egui::RichText::new("目标目录：").small().weak());
@@ -1169,7 +1081,6 @@ impl eframe::App for App {
 
                         ui.add_space(10.0);
 
-                        // 文件选择按钮
                         ui.horizontal(|ui| {
                             if ui.button("选择单个文件").clicked() {
                                 if let Some(p) = rfd::FileDialog::new().pick_file() {
@@ -1180,7 +1091,6 @@ impl eframe::App for App {
                                         .unwrap_or("unknown")
                                         .to_string();
                                     let dest = skills_dir.join(&name);
-                                    // 只接受目录
                                     if std::path::Path::new(&path).is_dir() && !dest.exists() {
                                         let _ = std::fs::copy(&path, &dest);
                                     }
@@ -1212,7 +1122,6 @@ impl eframe::App for App {
                                         ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                                     }
                                     if ui.button("确认导入").clicked() {
-                                        // 执行复制
                                         let pending = import_pending_paths.borrow().clone();
                                         import_pending_paths.borrow_mut().clear();
                                         let mut log = log.borrow_mut();
@@ -1235,7 +1144,6 @@ impl eframe::App for App {
                                             }
                                         }
                                         drop(log);
-                                        // 刷新主列表
                                         let _ = api_client::refresh_skills();
                                         import_refresh_flag.set(true);
                                     }
@@ -1262,45 +1170,10 @@ impl eframe::App for App {
             if self.popup_close_flag.get() {
                 self.show_import_window = false;
                 self.popup_close_flag.set(false);
-                // 不在这里刷新，避免阻塞UI，用户可手动点刷新按钮
             }
         }
     }
 }
-
-// ── 辅助函数 ──
-
-fn parse_front_matter(content: &str) -> (String, String, String) {
-    let mut name = String::new();
-    let mut description = String::new();
-    let mut tags = String::new();
-
-    if let Some(fm_start) = content.find("---") {
-        let rest = &content[fm_start + 3..];
-        if let Some(fm_end) = rest.find("---") {
-            let yaml_str = &rest[..fm_end];
-            if let Ok(docs) = yaml_rust2::YamlLoader::load_from_str(yaml_str) {
-                if let Some(doc) = docs.first() {
-                    if let Some(n) = doc["name"].as_str() {
-                        name = n.to_string();
-                    }
-                    if let Some(d) = doc["description"].as_str() {
-                        description = d.to_string();
-                    }
-                    if let Some(t) = doc["tags"].as_vec() {
-                        let tag_list: Vec<String> = t.iter()
-                            .filter_map(|tag| tag.as_str().map(|s| s.to_string()))
-                            .collect();
-                        tags = serde_json::to_string(&tag_list).unwrap_or_default();
-                    }
-                }
-            }
-        }
-    }
-    (name, description, tags)
-}
-
-// ── 托盘图标 ──
 
 fn create_tray_icon()
 -> Result<(tray_icon::TrayIcon, muda::MenuId, muda::MenuId), Box<dyn std::error::Error>> {
@@ -1344,10 +1217,7 @@ fn load_window_icon() -> egui::IconData {
     egui::IconData { rgba, width: w, height: h }
 }
 
-// ── Main ──
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // 检测是否已运行（通过窗口标题）
     #[cfg(windows)]
     {
         use std::process::Command;

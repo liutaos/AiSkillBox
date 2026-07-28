@@ -2,7 +2,6 @@ use rusqlite::{Connection, Result};
 use serde::Serialize;
 use std::sync::Mutex;
 
-/// Skill 数据结构
 #[derive(Debug, Clone, Serialize)]
 pub struct Skill {
     pub name: String,
@@ -16,7 +15,6 @@ pub struct Skill {
     pub updated_at: String,
 }
 
-/// Skill 数据库操作 trait
 pub trait SkillStore: Send + Sync {
     fn upsert(&self, name: &str, description: &str, tags: &str, file_path: &str, dir_name: &str) -> Result<()>;
     fn list_all(&self) -> Result<Vec<Skill>>;

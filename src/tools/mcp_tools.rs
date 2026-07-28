@@ -6,14 +6,12 @@ use tracing::info;
 use crate::db::{SkillDb, SkillStore};
 use crate::exec::ToolHandler;
 
-/// 注册 MCP tools（内置管理工具）
 pub fn register_mcp_tools(
     all_tools: &mut Vec<Tool>,
     handlers: &mut HashMap<String, ToolHandler>,
     db: &Arc<SkillDb>,
     skills_path: &str,
 ) {
-    // 刷新工具
     let refresh_tool = Tool::new(
         "refresh_skills".to_string(),
         "刷新skill列表，重新扫描skills目录".to_string(),
@@ -23,9 +21,7 @@ pub fn register_mcp_tools(
         }).as_object().cloned().unwrap_or_default()),
     );
     all_tools.push(refresh_tool);
-    // 注意：refresh handler 由 manager.rs 注册（需要 reload_flag）
 
-    // 删除 skill 工具
     let delete_tool = Tool::new(
         "delete_skill".to_string(),
         "删除指定的skill（移动到回收站）".to_string(),
@@ -45,7 +41,6 @@ pub fn register_mcp_tools(
     let db_clone = Arc::clone(db);
     handlers.insert("delete_skill".to_string(), create_delete_handler(skills_path_clone, db_clone));
 
-    // 恢复 skill 工具
     let restore_tool = Tool::new(
         "restore_skill".to_string(),
         "从回收站恢复指定的skill".to_string(),
@@ -65,7 +60,6 @@ pub fn register_mcp_tools(
     let db_clone = Arc::clone(db);
     handlers.insert("restore_skill".to_string(), create_restore_handler(skills_path_clone, db_clone));
 
-    // 搜索 skill 工具
     let search_tool = Tool::new(
         "search_skills".to_string(),
         "搜索skill，支持关键词和标签过滤".to_string(),
@@ -88,7 +82,6 @@ pub fn register_mcp_tools(
     let db_clone = Arc::clone(db);
     handlers.insert("search_skills".to_string(), create_search_handler(db_clone));
 
-    // 列出所有 skill 工具
     let list_tool = Tool::new(
         "list_skills".to_string(),
         "列出所有skill，支持标签过滤".to_string(),
@@ -106,7 +99,6 @@ pub fn register_mcp_tools(
     let db_clone = Arc::clone(db);
     handlers.insert("list_skills".to_string(), create_list_handler(db_clone));
 
-    // 列出回收站 skill 工具
     let trash_tool = Tool::new(
         "list_trash".to_string(),
         "列出回收站中的skill（已删除的skill）".to_string(),
@@ -119,7 +111,6 @@ pub fn register_mcp_tools(
     let db_clone = Arc::clone(db);
     handlers.insert("list_trash".to_string(), create_trash_handler(db_clone));
 
-    // 启用 skill 工具
     let enable_tool = Tool::new(
         "enable_skill".to_string(),
         "启用指定的skill".to_string(),
@@ -138,7 +129,6 @@ pub fn register_mcp_tools(
     let db_clone = Arc::clone(db);
     handlers.insert("enable_skill".to_string(), create_enable_handler(db_clone));
 
-    // 禁用 skill 工具
     let disable_tool = Tool::new(
         "disable_skill".to_string(),
         "禁用指定的skill".to_string(),
@@ -157,7 +147,6 @@ pub fn register_mcp_tools(
     let db_clone = Arc::clone(db);
     handlers.insert("disable_skill".to_string(), create_disable_handler(db_clone));
 
-    // 迁移 skill 工具
     let migrate_tool = Tool::new(
         "migrate_skills".to_string(),
         "获取MCP托管目录路径及常见skill存放位置，用于迁移".to_string(),
@@ -174,7 +163,6 @@ pub fn register_mcp_tools(
     info!("注册了 7 个 MCP 内置工具");
 }
 
-/// 创建删除 skill 工具的 handler
 fn create_delete_handler(skills_path: String, db: Arc<SkillDb>) -> ToolHandler {
     Arc::new(move |args| {
         let skills_path = skills_path.clone();
@@ -199,7 +187,6 @@ fn create_delete_handler(skills_path: String, db: Arc<SkillDb>) -> ToolHandler {
                 }));
             }
             
-            // 创建回收站目录
             let trash_dir = skills_dir.parent()
                 .unwrap_or(skills_dir)
                 .join("skill-trash");
@@ -209,7 +196,6 @@ fn create_delete_handler(skills_path: String, db: Arc<SkillDb>) -> ToolHandler {
                 }));
             }
             
-            // 移动到回收站
             let timestamp = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap_or_default()
@@ -222,7 +208,6 @@ fn create_delete_handler(skills_path: String, db: Arc<SkillDb>) -> ToolHandler {
                 }));
             }
             
-            // 更新数据库
             if let Err(e) = db.soft_delete(skill_name) {
                 return Ok(serde_json::json!({
                     "error": format!("目录已移动，但数据库更新失败: {}", e)
@@ -237,7 +222,6 @@ fn create_delete_handler(skills_path: String, db: Arc<SkillDb>) -> ToolHandler {
     })
 }
 
-/// 创建恢复 skill 工具的 handler
 fn create_restore_handler(skills_path: String, db: Arc<SkillDb>) -> ToolHandler {
     Arc::new(move |args| {
         let skills_path = skills_path.clone();
@@ -264,12 +248,10 @@ fn create_restore_handler(skills_path: String, db: Arc<SkillDb>) -> ToolHandler 
                 }));
             }
             
-            // 在回收站中查找匹配的目录（目录名格式：skill_name_timestamp）
             let mut found_path = None;
             if let Ok(entries) = std::fs::read_dir(&trash_dir) {
                 for entry in entries.flatten() {
                     let name = entry.file_name().to_string_lossy().to_string();
-                    // 匹配 skill_name 或 skill_name_timestamp 格式
                     if (name == skill_name || name.starts_with(&format!("{}_{}", skill_name, ""))) && entry.path().is_dir() {
                         found_path = Some(entry.path());
                         break;
@@ -286,7 +268,6 @@ fn create_restore_handler(skills_path: String, db: Arc<SkillDb>) -> ToolHandler 
                 }
             };
             
-            // 恢复到skills目录
             let restore_path = skills_dir.join(skill_name);
             if let Err(e) = std::fs::rename(&trash_path, &restore_path) {
                 return Ok(serde_json::json!({
@@ -294,7 +275,6 @@ fn create_restore_handler(skills_path: String, db: Arc<SkillDb>) -> ToolHandler 
                 }));
             }
             
-            // 更新数据库
             if let Err(e) = db.restore(skill_name) {
                 return Ok(serde_json::json!({
                     "error": format!("目录已恢复，但数据库更新失败: {}", e)
@@ -309,7 +289,6 @@ fn create_restore_handler(skills_path: String, db: Arc<SkillDb>) -> ToolHandler 
     })
 }
 
-/// 创建搜索 skill 的 handler
 fn create_search_handler(db: Arc<SkillDb>) -> ToolHandler {
     Arc::new(move |args| {
         let db = Arc::clone(&db);
@@ -352,7 +331,6 @@ fn create_search_handler(db: Arc<SkillDb>) -> ToolHandler {
     })
 }
 
-/// 创建列出所有 skill 的 handler
 fn create_list_handler(db: Arc<SkillDb>) -> ToolHandler {
     Arc::new(move |args| {
         let db = Arc::clone(&db);
@@ -389,9 +367,8 @@ fn create_list_handler(db: Arc<SkillDb>) -> ToolHandler {
     })
 }
 
-/// 创建列出回收站 skill 的 handler
 fn create_trash_handler(db: Arc<SkillDb>) -> ToolHandler {
-    Arc::new(move |args| {
+    Arc::new(move |_args| {
         let db = Arc::clone(&db);
         Box::pin(async move {
             let results = db.list_trash().unwrap_or_default();
@@ -414,7 +391,6 @@ fn create_trash_handler(db: Arc<SkillDb>) -> ToolHandler {
     })
 }
 
-/// 创建启用 skill 的 handler
 fn create_enable_handler(db: Arc<SkillDb>) -> ToolHandler {
     Arc::new(move |args| {
         let db = Arc::clone(&db);
@@ -429,7 +405,6 @@ fn create_enable_handler(db: Arc<SkillDb>) -> ToolHandler {
                 }));
             }
             
-            // 检查skill是否在回收站
             if let Ok(Some(skill)) = db.get_by_name(skill_name) {
                 if skill.deleted {
                     return Ok(serde_json::json!({
@@ -451,7 +426,6 @@ fn create_enable_handler(db: Arc<SkillDb>) -> ToolHandler {
     })
 }
 
-/// 创建禁用 skill 的 handler
 fn create_disable_handler(db: Arc<SkillDb>) -> ToolHandler {
     Arc::new(move |args| {
         let db = Arc::clone(&db);
@@ -466,7 +440,6 @@ fn create_disable_handler(db: Arc<SkillDb>) -> ToolHandler {
                 }));
             }
             
-            // 检查skill是否在回收站
             if let Ok(Some(skill)) = db.get_by_name(skill_name) {
                 if skill.deleted {
                     return Ok(serde_json::json!({
@@ -488,9 +461,8 @@ fn create_disable_handler(db: Arc<SkillDb>) -> ToolHandler {
     })
 }
 
-/// 创建迁移 skill 工具的 handler
-fn create_migrate_handler(skills_path: String, db: Arc<SkillDb>) -> ToolHandler {
-    Arc::new(move |args| {
+fn create_migrate_handler(skills_path: String, _db: Arc<SkillDb>) -> ToolHandler {
+    Arc::new(move |_args| {
         let skills_path = skills_path.clone();
         Box::pin(async move {
             let home = std::env::var("USERPROFILE")
@@ -519,51 +491,4 @@ fn create_migrate_handler(skills_path: String, db: Arc<SkillDb>) -> ToolHandler 
             }))
         })
     })
-}
-
-/// 递归复制目录
-fn copy_dir_recursive(src: &std::path::Path, dst: &std::path::Path) -> std::io::Result<()> {
-    std::fs::create_dir_all(dst)?;
-    for entry in std::fs::read_dir(src)? {
-        let entry = entry?;
-        let src_path = entry.path();
-        let dst_path = dst.join(entry.file_name());
-        if src_path.is_dir() {
-            copy_dir_recursive(&src_path, &dst_path)?;
-        } else {
-            std::fs::copy(&src_path, &dst_path)?;
-        }
-    }
-    Ok(())
-}
-
-/// 解析 YAML front matter
-fn parse_front_matter(content: &str) -> (String, String, String) {
-    let mut name = String::new();
-    let mut description = String::new();
-    let mut tags = String::new();
-
-    if let Some(fm_start) = content.find("---") {
-        let rest = &content[fm_start + 3..];
-        if let Some(fm_end) = rest.find("---") {
-            let yaml_str = &rest[..fm_end];
-            if let Ok(docs) = yaml_rust2::YamlLoader::load_from_str(yaml_str) {
-                if let Some(doc) = docs.first() {
-                    if let Some(n) = doc["name"].as_str() {
-                        name = n.to_string();
-                    }
-                    if let Some(d) = doc["description"].as_str() {
-                        description = d.to_string();
-                    }
-                    if let Some(t) = doc["tags"].as_vec() {
-                        let tag_list: Vec<String> = t.iter()
-                            .filter_map(|tag| tag.as_str().map(|s| s.to_string()))
-                            .collect();
-                        tags = serde_json::to_string(&tag_list).unwrap_or_default();
-                    }
-                }
-            }
-        }
-    }
-    (name, description, tags)
 }

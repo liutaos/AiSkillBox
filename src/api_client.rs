@@ -30,14 +30,11 @@ struct ApiResponse<T> {
 
 #[derive(Deserialize)]
 struct SkillsData {
+    #[allow(dead_code)]
     count: usize,
     skills: Vec<SkillEntry>,
 }
 
-#[derive(Deserialize)]
-struct StatusData {
-    running: bool,
-}
 
 pub fn list_skills() -> Result<Vec<SkillEntry>, String> {
     let url = format!("{}/skills", base_url());
@@ -100,49 +97,6 @@ pub fn disable_skill(name: &str) -> Result<(), String> {
         Ok(())
     } else {
         Err(json.message.unwrap_or("禁用失败".to_string()))
-    }
-}
-
-pub fn check_status() -> bool {
-    let url = format!("{}/status", base_url());
-    let resp = match reqwest::blocking::get(&url) {
-        Ok(r) => r,
-        Err(_) => return false,
-    };
-    let json: ApiResponse<StatusData> = match resp.json() {
-        Ok(j) => j,
-        Err(_) => return false,
-    };
-    json.data.map(|d| d.running).unwrap_or(false)
-}
-
-pub fn start_service() -> Result<(), String> {
-    let url = format!("{}/start", base_url());
-    let resp = reqwest::blocking::Client::new()
-        .post(&url)
-        .send()
-        .map_err(|e| format!("请求失败: {}", e))?;
-    let json: ApiResponse<()> = resp.json()
-        .map_err(|e| format!("解析失败: {}", e))?;
-    if json.success {
-        Ok(())
-    } else {
-        Err(json.message.unwrap_or("启动失败".to_string()))
-    }
-}
-
-pub fn stop_service() -> Result<(), String> {
-    let url = format!("{}/stop", base_url());
-    let resp = reqwest::blocking::Client::new()
-        .post(&url)
-        .send()
-        .map_err(|e| format!("请求失败: {}", e))?;
-    let json: ApiResponse<()> = resp.json()
-        .map_err(|e| format!("解析失败: {}", e))?;
-    if json.success {
-        Ok(())
-    } else {
-        Err(json.message.unwrap_or("停止失败".to_string()))
     }
 }
 

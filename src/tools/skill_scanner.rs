@@ -3,7 +3,6 @@ use tracing::{info, warn};
 use walkdir::WalkDir;
 use yaml_rust2::YamlLoader;
 
-/// 扫描到的 skill 信息
 #[derive(Debug, Clone)]
 pub struct SkillInfo {
     pub name: String,
@@ -13,7 +12,6 @@ pub struct SkillInfo {
     pub skill_file: PathBuf,
 }
 
-/// 扫描 skills 目录，解析 SKILL.md 的 front matter
 pub fn scan_skills(skills_dir: &str) -> Vec<SkillInfo> {
     let dir = Path::new(skills_dir);
     if !dir.exists() {
@@ -76,8 +74,6 @@ pub fn scan_skills(skills_dir: &str) -> Vec<SkillInfo> {
     skills
 }
 
-/// 解析 SKILL.md 的 YAML front matter
-/// 返回 (name, description, tags)
 fn parse_skill_file(skill_file: &Path) -> Option<(String, String, Vec<String>)> {
     let content = std::fs::read_to_string(skill_file).ok()?;
 
@@ -107,21 +103,32 @@ fn parse_skill_file(skill_file: &Path) -> Option<(String, String, Vec<String>)> 
     Some((name, description, tags))
 }
 
-/// 将 SkillInfo 转换为 ToolDefinition 格式的 JSON
-pub fn skill_to_tool_json(skill: &SkillInfo) -> serde_json::Value {
-    serde_json::json!({
-        "name": skill.name,
-        "description": skill.description,
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "file_path": {
-                    "type": "string",
-                    "description": "Skill文件路径",
-                    "default": skill.skill_file.to_string_lossy()
+pub fn parse_front_matter(content: &str) -> (String, String, String) {
+    let mut name = String::new();
+    let mut description = String::new();
+    let mut tags = String::new();
+
+    if let Some(fm_start) = content.find("---") {
+        let rest = &content[fm_start + 3..];
+        if let Some(fm_end) = rest.find("---") {
+            let yaml_str = &rest[..fm_end];
+            if let Ok(docs) = YamlLoader::load_from_str(yaml_str) {
+                if let Some(doc) = docs.first() {
+                    if let Some(n) = doc["name"].as_str() {
+                        name = n.to_string();
+                    }
+                    if let Some(d) = doc["description"].as_str() {
+                        description = d.to_string();
+                    }
+                    if let Some(t) = doc["tags"].as_vec() {
+                        let tag_list: Vec<String> = t.iter()
+                            .filter_map(|tag| tag.as_str().map(|s| s.to_string()))
+                            .collect();
+                        tags = serde_json::to_string(&tag_list).unwrap_or_default();
+                    }
                 }
             }
-        },
-        "handler": "file_reader"
-    })
+        }
+    }
+    (name, description, tags)
 }

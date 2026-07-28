@@ -1,10 +1,9 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use tracing::{info, warn};
 
 use super::schema::{ToolConfig, AppError};
 use super::skill_scanner::{self, SkillInfo};
 
-/// 配置加载器（支持 JSON 配置 + Skills 自动扫描）
 #[derive(Clone)]
 pub struct JsonLoader {
     tools_path: PathBuf,
@@ -17,7 +16,6 @@ impl JsonLoader {
         }
     }
 
-    /// 加载所有 JSON 配置
     pub fn load_tools(&self) -> Result<Vec<ToolConfig>, AppError> {
         let mut configs = Vec::new();
 
@@ -46,18 +44,7 @@ impl JsonLoader {
         Ok(configs)
     }
 
-    /// 扫描 skills 目录，自动生成工具配置
     pub fn load_skills(&self, skills_dir: &str) -> Vec<SkillInfo> {
         skill_scanner::scan_skills(skills_dir)
-    }
-
-    /// 兼容旧接口：加载所有（JSON 配置）
-    pub fn load_all(&self) -> Result<Vec<ToolConfig>, AppError> {
-        self.load_tools()
-    }
-
-    /// 获取工具配置目录
-    pub fn tools_path(&self) -> &Path {
-        &self.tools_path
     }
 }
