@@ -1,5 +1,6 @@
 // Copyright (c) Mr_老鬼. All rights reserved.
 // https://www.junjiestudio.top
+// Derivative works must retain this copyright notice.
 import { createApp } from 'vue'
 import naive from 'naive-ui'
 import App from './App.vue'

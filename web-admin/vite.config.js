@@ -1,5 +1,6 @@
 // Copyright (c) Mr_老鬼. All rights reserved.
 // https://www.junjiestudio.top
+// Derivative works must retain this copyright notice.
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
