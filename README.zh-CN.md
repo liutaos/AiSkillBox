@@ -1,7 +1,5 @@
 # AI 技能百宝箱 (AISkillBox)
 
-[English](README.en.md) | [简体中文](README.zh-CN.md)
-
 > 给普通用户的 Skill 管理工具，让管理 AI 技能像用手机一样简单。
 
 ## 这是什么？
@@ -109,32 +107,6 @@ AISkillBox/
 
 ---
 
-<details>
-<summary>技术细节（点击展开）</summary>
-
-### MCP 工具
-
-| 工具名 | 说明 |
-|--------|------|
-| `list_skills` | 列出所有技能 |
-| `search_skills` | 搜索技能 |
-| `enable_skill` | 启用技能 |
-| `disable_skill` | 禁用技能 |
-| `delete_skill` | 删除技能（进回收站） |
-| `restore_skill` | 从回收站恢复 |
-| `refresh_skills` | 刷新技能列表 |
-
-### 配置文件
-
-```toml
-listen_addr = "127.0.0.1:10882"
-mcp_listen_addr = "127.0.0.1:10881"
-```
-
-</details>
-
----
-
 ## 开源协议
 
 Copyright (c) Mr_老鬼. All rights reserved.
@@ -174,21 +146,6 @@ Copyright (c) Mr_老鬼. All rights reserved.
 │  数据层                                 │
 │  └─ SQLite (skills.db)                 │
 └─────────────────────────────────────────┘
-```
-
-### 目录结构
-
-```
-AISkillBox/
-├── skills/           # 技能文件夹（用户存放）
-│   ├── easyclick-android/
-│   │   └── SKILL.md
-│   └── ...
-├── skill-trash/      # 回收站
-├── skills.db         # SQLite 数据库
-├── config.toml       # 配置文件
-├── tools/            # 内置工具定义
-└── web-admin/        # Web 管理后台
 ```
 
 ### 编译
