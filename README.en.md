@@ -22,9 +22,11 @@ You have many AI skill files scattered across various folders, hard to find, man
 
 ## 3 Steps to Start
 
+> ✅ No Python/Node installation required, no code changes needed, just double-click to run
+
 1. **Download and extract**
 2. **Double-click** `AISkillBox-mcp.exe`
-3. **Configure connection** (add MCP in Cursor/Claude)
+3. **Configure connection** (add MCP in any AI editor)
 
 That's it.
 
@@ -49,7 +51,7 @@ AI assistants can use these skills
 |--------|-------------|
 | Enable | Let AI assistants use this skill |
 | Disable | Temporarily prevent AI from using this skill |
-| Delete | Don't want it? Goes to trash first |
+| Delete | Don't want it? Goes to trash first (won't be lost, AI can't access it, safe to use) |
 | Restore | Deleted by mistake? One-click restore from trash |
 | Search | Quick find by keyword/tag |
 
@@ -63,7 +65,7 @@ AI assistants can use these skills
 
 ## How to configure?
 
-Add to Cursor's `mcp.json`:
+Add to any AI editor (Cursor/Claude/Zed/Windsurf etc.) `mcp.json`:
 
 ```json
 {
@@ -86,6 +88,7 @@ After configuration, tell AI "list all skills" to test.
 | Trash | ❌ Deleted = gone forever | ✅ Restore from trash |
 | Search | ❌ Manual find | ✅ Keyword search |
 | Batch ops | ❌ One by one | ✅ Batch manage |
+| Cross-editor | ❌ Locked to single editor | ✅ One config, works everywhere |
 
 ## Program Files
 
@@ -107,11 +110,48 @@ AISkillBox/
 
 ---
 
+<details>
+<summary>Technical Details (click to expand)</summary>
+
+### MCP Tools
+
+| Tool | Description |
+|------|-------------|
+| `list_skills` | List all skills |
+| `search_skills` | Search skills |
+| `enable_skill` | Enable skill |
+| `disable_skill` | Disable skill |
+| `delete_skill` | Delete skill (move to trash) |
+| `restore_skill` | Restore from trash |
+| `refresh_skills` | Refresh skill list |
+
+### Configuration
+
+```toml
+listen_addr = "127.0.0.1:10882"
+mcp_listen_addr = "127.0.0.1:10881"
+```
+
+### Design Philosophy
+
+1. **Less is more**: Only implement what's truly needed, no feature bloat
+2. **Distill, don't hoard**: Only keep valuable information, no duplicate storage
+3. **Conversational ops**: Manage through AI chat, more efficient than GUI
+4. **Local first**: All data stored locally, no external dependencies
+5. **Zero dependencies**: Double-click to run, no environment setup needed
+6. **Cross-editor compatible**: One config works with Cursor/Claude/Zed and any AI editor
+
+</details>
+
+---
+
 ## License
 
 Copyright (c) Mr_老鬼. All rights reserved.
 
 Free to use, modify, and distribute, but **must retain original copyright notice and attribution link**.
+
+For commercial use or secondary development, please contact the author for authorization: QQ 1156346325 / Website https://www.junjiestudio.top
 
 ---
 
@@ -122,7 +162,7 @@ Free to use, modify, and distribute, but **must retain original copyright notice
 | Technology | Purpose |
 |------------|---------|
 | **Rust** | Main language, high performance, memory safety |
-| **rmcp** | MCP protocol official SDK |
+| **rmcp** | MCP protocol official SDK (compatible with 2026-07 stateless MCP spec) |
 | **SQLite** | Local data persistence |
 | **Tokio** | Async runtime |
 | **Axum** | HTTP framework |
@@ -170,7 +210,7 @@ cargo build --release
 
 ```toml
 [dependencies]
-rmcp = "2.0"           # MCP protocol
+rmcp = "2.0"           # MCP protocol (compatible with 2026-07 stateless MCP spec)
 tokio = "1"            # Async runtime
 axum = "0.8"           # HTTP framework
 rusqlite = "0.37"      # SQLite
