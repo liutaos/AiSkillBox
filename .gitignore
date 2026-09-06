@@ -11,6 +11,7 @@
 
 # 发布包
 release-pkg/
+release/
 *.zip
 
 # Windows 资源文件（编译时生成）
