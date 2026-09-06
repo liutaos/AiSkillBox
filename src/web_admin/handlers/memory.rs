@@ -88,8 +88,9 @@ fn paginate_issues(
 pub async fn list_memories(req: &mut Request, depot: &mut Depot, res: &mut Response) {
     let db = depot.get_typed::<Arc<SkillDb>>().unwrap();
     let (page, size) = parse_pagination(req);
+    let include_archived = req.query::<bool>("include_archived").unwrap_or(false);
 
-    let all = db.recall("", None, false, 10000).unwrap_or_default();
+    let all = db.recall("", None, include_archived, 10000).unwrap_or_default();
     let (paged, total) = paginate_memories(all, page, size);
     res.render(Json(serde_json::json!({
         "success": true,

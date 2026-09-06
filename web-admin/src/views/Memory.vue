@@ -30,6 +30,10 @@
     <n-card title="记忆管理" style="margin-bottom: 24px">
       <template #header-extra>
         <n-space>
+          <n-switch v-model:value="showArchived" @update:value="loadMemories">
+            <template #checked>显示归档</template>
+            <template #unchecked>隐藏归档</template>
+          </n-switch>
           <n-input v-model:value="memSearchQuery" placeholder="搜索记忆..." clearable style="width: 200px" @keyup.enter="searchMemories" />
           <n-button type="primary" @click="searchMemories" :loading="memLoading.search">搜索</n-button>
           <n-button @click="resetMemSearch">重置</n-button>
@@ -94,6 +98,7 @@ const memCurrentPage = ref(1)
 const memPageSize = ref(20)
 const memTotal = ref(0)
 const memLoading = reactive({ table: false, search: false })
+const showArchived = ref(false)
 
 const memPagination = reactive({
   page: memCurrentPage.value,
@@ -167,6 +172,9 @@ const memColumns = [
   { title: '内容', key: 'content', ellipsis: { tooltip: true } },
   { title: '标签', key: 'tags', width: 120 },
   { title: '来源', key: 'source', width: 100 },
+  { title: '状态', key: 'is_archived', width: 80, render(row) {
+    return h(NTag, { type: row.is_archived ? 'warning' : 'success', size: 'small' }, () => row.is_archived ? '已归档' : '活跃')
+  }},
   { title: '访问次数', key: 'access_count', width: 80 },
   { title: '创建时间', key: 'created_at', width: 160 },
   {
@@ -222,11 +230,10 @@ const loadMemStats = async () => {
 const loadMemories = async () => {
   memLoading.table = true
   try {
-    const res = await getMemories({ page: memCurrentPage.value, size: memPageSize.value })
+    const res = await getMemories({ page: memCurrentPage.value, size: memPageSize.value, include_archived: showArchived.value })
     memories.value = res.data?.memories || []
     memTotal.value = res.data?.count || 0
     memPagination.itemCount = memTotal.value
-    memStats.value.total = memTotal.value
   } catch (e) {
     message.error('加载记忆失败: ' + e.message)
   } finally {
