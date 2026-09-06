@@ -43,6 +43,7 @@ import { NIcon } from 'naive-ui'
 import {
   GridOutline,
   ListOutline,
+  BookOutline,
   TrashOutline,
   SettingsOutline
 } from '@vicons/ionicons5'
@@ -56,6 +57,7 @@ const activeMenu = computed(() => {
   const path = route.path
   if (path === '/') return '/'
   if (path.startsWith('/skills')) return '/skills'
+  if (path.startsWith('/memory')) return '/memory'
   if (path.startsWith('/trash')) return '/trash'
   if (path.startsWith('/settings')) return '/settings'
   return path
@@ -71,6 +73,11 @@ const menuOptions = [
     label: 'Skill管理',
     key: '/skills',
     icon: () => h(NIcon, null, { default: () => h(ListOutline) })
+  },
+  {
+    label: '记忆/问题',
+    key: '/memory',
+    icon: () => h(NIcon, null, { default: () => h(BookOutline) })
   },
   {
     label: '回收站',

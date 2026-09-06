@@ -32,7 +32,37 @@ impl ServerHandler for EcMcpHandler {
 
         ServerInfo::new(capabilities)
             .with_server_info(Implementation::new("easyclick-mcp-extension", "0.1.0"))
-            .with_instructions("AI 技能百宝箱 - 自动注册和管理 AI Skill 的 MCP 服务。支持从 SKILL.md 解析工具定义，运行时刷新工具列表。")
+            .with_instructions(r#"# AI 技能百宝箱
+
+## 记忆系统（必须遵守）
+每次开始新任务前：
+1. 调用 recall 搜索相关历史记忆
+2. 如果找到相关记忆，参考历史方案继续工作
+3. 如果没找到，正常执行新任务
+
+每次完成阶段性工作后：
+1. 调用 remember 记录关键信息
+2. 内容应包含：用户需求、技术方案、关键结果
+
+## 问题处理流程（遇到报错时）
+1. 先调用 search_issues 搜索历史解决方案
+2. 如果找到匹配问题，参考解决方案
+3. 如果没找到，自行分析解决
+4. 解决后调用 report_issue 记录新问题，积累问题库
+
+## 问题分类 (category)
+安装 / 配置 / 运行 / 兼容性 / 性能 / 功能
+
+## 任务场景 (task)
+skill管理 / MCP协议 / 搜索 / 导入 / UI界面 / 数据库
+
+## Skill 管理
+- list_skills: 列出所有 skill
+- search_skills: 搜索 skill
+- enable_skill / disable_skill: 启用/禁用 skill
+- delete_skill / restore_skill: 删除/恢复 skill
+- refresh_skills: 刷新 skill 列表
+"#)
     }
 
     fn list_tools<'a>(

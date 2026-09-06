@@ -16,6 +16,11 @@ const routes = [
     component: () => import('../views/Skills.vue')
   },
   {
+    path: '/memory',
+    name: 'Memory',
+    component: () => import('../views/Memory.vue')
+  },
+  {
     path: '/trash',
     name: 'Trash',
     component: () => import('../views/Trash.vue')

@@ -8,7 +8,7 @@ use salvo::serve_static::StaticDir;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
-use super::handlers::{config, service, skill};
+use super::handlers::{config, service, skill, memory};
 use crate::db::SkillDb;
 
 pub fn create_router(
@@ -41,6 +41,16 @@ pub fn create_router(
                 .push(Router::with_path("status").get(service::check_status))
                 .push(Router::with_path("refresh").post(service::refresh_skills))
                 .push(Router::with_path("config").get(config::get_config))
+                // 记忆 API
+                .push(Router::with_path("memories").get(memory::list_memories))
+                .push(Router::with_path("memories/search").post(memory::search_memories))
+                .push(Router::with_path("memories/delete").post(memory::delete_memory))
+                .push(Router::with_path("memories/archive").post(memory::archive_memories))
+                .push(Router::with_path("memories/stats").get(memory::get_memory_stats))
+                // 问题 API
+                .push(Router::with_path("issues").get(memory::list_issues))
+                .push(Router::with_path("issues/search").post(memory::search_issues))
+                .push(Router::with_path("issues/delete").post(memory::delete_issue))
         )
         .push(
             Router::with_path("web-admin/{*path}").get(

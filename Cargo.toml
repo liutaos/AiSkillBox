@@ -46,6 +46,12 @@ yaml-rust2 = "0.11.0"
 # SQLite
 rusqlite = { version = "0.37.0", features = ["bundled"] }
 
+# 时间处理
+chrono = "0.4"
+
+# UUID
+uuid = { version = "1", features = ["v4"] }
+
 # GUI (egui)
 eframe = { version = "0.33.3", features = ["default"] }
 egui_extras = { version = "0.33.3", features = ["serde"] }

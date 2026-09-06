@@ -7,7 +7,7 @@ use std::sync::Arc;
 use rmcp::model::Tool;
 use tracing::info;
 
-use crate::db::{SkillDb, SkillStore};
+use crate::db::{SkillDb, SkillStore, MemoryStore, IssueStore};
 use crate::exec::ToolHandler;
 
 pub fn register_mcp_tools(
@@ -165,6 +165,121 @@ pub fn register_mcp_tools(
     handlers.insert("migrate_skills".to_string(), create_migrate_handler(skills_path_clone, db_clone));
 
     info!("注册了 7 个 MCP 内置工具");
+
+    // Memory tools
+    let remember_tool = Tool::new(
+        "remember".to_string(),
+        "记住一条信息（需求、方案、结果等），支持标签和来源".to_string(),
+        Arc::new(serde_json::json!({
+            "type": "object",
+            "properties": {
+                "content": { "type": "string", "description": "记忆内容" },
+                "tags": { "type": "string", "description": "标签，多个用逗号分隔" },
+                "source": { "type": "string", "description": "来源（如文件路径、会话ID）" }
+            },
+            "required": ["content"]
+        }).as_object().cloned().unwrap_or_default()),
+    );
+    all_tools.push(remember_tool);
+    let db_clone = Arc::clone(db);
+    handlers.insert("remember".to_string(), create_remember_handler(db_clone));
+
+    let recall_tool = Tool::new(
+        "recall".to_string(),
+        "回忆相关记忆，按关键词和标签搜索".to_string(),
+        Arc::new(serde_json::json!({
+            "type": "object",
+            "properties": {
+                "query": { "type": "string", "description": "搜索关键词" },
+                "tags": { "type": "string", "description": "标签过滤，多个用逗号分隔" },
+                "include_archived": { "type": "boolean", "description": "是否包含已归档记忆" },
+                "limit": { "type": "integer", "description": "返回条数，默认5" }
+            }
+        }).as_object().cloned().unwrap_or_default()),
+    );
+    all_tools.push(recall_tool);
+    let db_clone = Arc::clone(db);
+    handlers.insert("recall".to_string(), create_recall_handler(db_clone));
+
+    let forget_tool = Tool::new(
+        "forget".to_string(),
+        "永久删除一条记忆".to_string(),
+        Arc::new(serde_json::json!({
+            "type": "object",
+            "properties": {
+                "memory_id": { "type": "integer", "description": "记忆ID" }
+            },
+            "required": ["memory_id"]
+        }).as_object().cloned().unwrap_or_default()),
+    );
+    all_tools.push(forget_tool);
+    let db_clone = Arc::clone(db);
+    handlers.insert("forget".to_string(), create_forget_handler(db_clone));
+
+    let archive_tool = Tool::new(
+        "archive_memories".to_string(),
+        "归档超过指定天数的旧记忆".to_string(),
+        Arc::new(serde_json::json!({
+            "type": "object",
+            "properties": {
+                "older_than_days": { "type": "integer", "description": "归档超过指定天数的记忆，默认30" }
+            }
+        }).as_object().cloned().unwrap_or_default()),
+    );
+    all_tools.push(archive_tool);
+    let db_clone = Arc::clone(db);
+    handlers.insert("archive_memories".to_string(), create_archive_handler(db_clone));
+
+    let stats_tool = Tool::new(
+        "get_memory_stats".to_string(),
+        "获取记忆统计信息".to_string(),
+        Arc::new(serde_json::json!({
+            "type": "object",
+            "properties": {}
+        }).as_object().cloned().unwrap_or_default()),
+    );
+    all_tools.push(stats_tool);
+    let db_clone = Arc::clone(db);
+    handlers.insert("get_memory_stats".to_string(), create_stats_handler(db_clone));
+
+    // Issue tools
+    let search_issues_tool = Tool::new(
+        "search_issues".to_string(),
+        "搜索常见问题库，按场景和解决方案查找".to_string(),
+        Arc::new(serde_json::json!({
+            "type": "object",
+            "properties": {
+                "query": { "type": "string", "description": "搜索关键词" },
+                "task": { "type": "string", "description": "任务场景过滤" },
+                "category": { "type": "string", "description": "分类过滤" },
+                "limit": { "type": "integer", "description": "返回条数，默认10" }
+            }
+        }).as_object().cloned().unwrap_or_default()),
+    );
+    all_tools.push(search_issues_tool);
+    let db_clone = Arc::clone(db);
+    handlers.insert("search_issues".to_string(), create_search_issues_handler(db_clone));
+
+    let report_issue_tool = Tool::new(
+        "report_issue".to_string(),
+        "报告新问题，积累问题库".to_string(),
+        Arc::new(serde_json::json!({
+            "type": "object",
+            "properties": {
+                "category": { "type": "string", "description": "分类" },
+                "task": { "type": "string", "description": "任务场景" },
+                "scenario": { "type": "string", "description": "问题现象" },
+                "solution": { "type": "string", "description": "解决方案" },
+                "related_api": { "type": "string", "description": "相关API" }
+            },
+            "required": ["category", "scenario", "solution"]
+        }).as_object().cloned().unwrap_or_default()),
+    );
+    all_tools.push(report_issue_tool);
+    let db_clone = Arc::clone(db);
+    handlers.insert("report_issue".to_string(), create_report_issue_handler(db_clone));
+
+    info!("注册了 7 个记忆/问题 MCP 工具");
 }
 
 fn create_delete_handler(skills_path: String, db: Arc<SkillDb>) -> ToolHandler {
@@ -493,6 +608,183 @@ fn create_migrate_handler(skills_path: String, _db: Arc<SkillDb>) -> ToolHandler
                     "移动完成后调用 refresh_skills 刷新"
                 ]
             }))
+        })
+    })
+}
+
+fn create_remember_handler(db: Arc<SkillDb>) -> ToolHandler {
+    Arc::new(move |args| {
+        let db = Arc::clone(&db);
+        Box::pin(async move {
+            let content = args.get("content").and_then(|v| v.as_str()).unwrap_or("");
+            let tags = args.get("tags").and_then(|v| v.as_str());
+            let source = args.get("source").and_then(|v| v.as_str());
+            
+            if content.is_empty() {
+                return Ok(serde_json::json!({ "error": "请提供 content 参数" }));
+            }
+            
+            match db.remember(content, tags, source) {
+                Ok(id) => Ok(serde_json::json!({
+                    "status": "success",
+                    "memory_id": id,
+                    "message": format!("已记住，ID: {}", id)
+                })),
+                Err(e) => Ok(serde_json::json!({ "error": format!("记住失败: {}", e) })),
+            }
+        })
+    })
+}
+
+fn create_recall_handler(db: Arc<SkillDb>) -> ToolHandler {
+    Arc::new(move |args| {
+        let db = Arc::clone(&db);
+        Box::pin(async move {
+            let query = args.get("query").and_then(|v| v.as_str()).unwrap_or("");
+            let tags = args.get("tags").and_then(|v| v.as_str())
+                .map(|t| t.split(',').map(|s| s.trim().to_string()).collect());
+            let include_archived = args.get("include_archived").and_then(|v| v.as_bool()).unwrap_or(false);
+            let limit = args.get("limit").and_then(|v| v.as_i64()).unwrap_or(5);
+            
+            if query.is_empty() && tags.is_none() {
+                return Ok(serde_json::json!({ "error": "请提供 query 或 tags 参数" }));
+            }
+            
+            match db.recall(query, tags, include_archived, limit) {
+                Ok(memories) => {
+                    let items: Vec<serde_json::Value> = memories.iter().map(|m| {
+                        serde_json::json!({
+                            "id": m.id,
+                            "content": m.content,
+                            "tags": m.tags,
+                            "source": m.source,
+                            "created_at": m.created_at
+                        })
+                    }).collect();
+                    Ok(serde_json::json!({
+                        "count": items.len(),
+                        "memories": items
+                    }))
+                },
+                Err(e) => Ok(serde_json::json!({ "error": format!("搜索失败: {}", e) })),
+            }
+        })
+    })
+}
+
+fn create_forget_handler(db: Arc<SkillDb>) -> ToolHandler {
+    Arc::new(move |args| {
+        let db = Arc::clone(&db);
+        Box::pin(async move {
+            let memory_id = args.get("memory_id").and_then(|v| v.as_i64()).unwrap_or(0);
+            if memory_id == 0 {
+                return Ok(serde_json::json!({ "error": "请提供 memory_id 参数" }));
+            }
+            match db.forget(memory_id) {
+                Ok(()) => Ok(serde_json::json!({
+                    "status": "success",
+                    "message": format!("已删除记忆 ID: {}", memory_id)
+                })),
+                Err(e) => Ok(serde_json::json!({ "error": format!("删除失败: {}", e) })),
+            }
+        })
+    })
+}
+
+fn create_archive_handler(db: Arc<SkillDb>) -> ToolHandler {
+    Arc::new(move |args| {
+        let db = Arc::clone(&db);
+        Box::pin(async move {
+            let days = args.get("older_than_days").and_then(|v| v.as_i64()).unwrap_or(30);
+            match db.archive(days) {
+                Ok(count) => Ok(serde_json::json!({
+                    "status": "success",
+                    "archived_count": count,
+                    "message": format!("已归档 {} 条记忆", count)
+                })),
+                Err(e) => Ok(serde_json::json!({ "error": format!("归档失败: {}", e) })),
+            }
+        })
+    })
+}
+
+fn create_stats_handler(db: Arc<SkillDb>) -> ToolHandler {
+    Arc::new(move |_args| {
+        let db = Arc::clone(&db);
+        Box::pin(async move {
+            match db.get_stats() {
+                Ok(stats) => Ok(serde_json::json!({
+                    "total": stats.total,
+                    "active": stats.active,
+                    "archived": stats.archived,
+                    "archive_rate": format!("{:.2}%", stats.archive_rate * 100.0)
+                })),
+                Err(e) => Ok(serde_json::json!({ "error": format!("获取统计失败: {}", e) })),
+            }
+        })
+    })
+}
+
+fn create_search_issues_handler(db: Arc<SkillDb>) -> ToolHandler {
+    Arc::new(move |args| {
+        let db = Arc::clone(&db);
+        Box::pin(async move {
+            let query = args.get("query").and_then(|v| v.as_str()).unwrap_or("");
+            let task = args.get("task").and_then(|v| v.as_str());
+            let category = args.get("category").and_then(|v| v.as_str());
+            let limit = args.get("limit").and_then(|v| v.as_i64()).unwrap_or(10);
+            
+            if query.is_empty() && task.is_none() && category.is_none() {
+                return Ok(serde_json::json!({ "error": "请提供 query、task 或 category 参数" }));
+            }
+            
+            match db.search_issues(query, task, category, limit) {
+                Ok(issues) => {
+                    let items: Vec<serde_json::Value> = issues.iter().map(|i| {
+                        serde_json::json!({
+                            "id": i.id,
+                            "issue_id": i.issue_id,
+                            "category": i.category,
+                            "task": i.task,
+                            "scenario": i.scenario,
+                            "solution": i.solution,
+                            "related_api": i.related_api,
+                            "frequency": i.frequency
+                        })
+                    }).collect();
+                    Ok(serde_json::json!({
+                        "count": items.len(),
+                        "issues": items
+                    }))
+                },
+                Err(e) => Ok(serde_json::json!({ "error": format!("搜索失败: {}", e) })),
+            }
+        })
+    })
+}
+
+fn create_report_issue_handler(db: Arc<SkillDb>) -> ToolHandler {
+    Arc::new(move |args| {
+        let db = Arc::clone(&db);
+        Box::pin(async move {
+            let category = args.get("category").and_then(|v| v.as_str()).unwrap_or("");
+            let task = args.get("task").and_then(|v| v.as_str());
+            let scenario = args.get("scenario").and_then(|v| v.as_str()).unwrap_or("");
+            let solution = args.get("solution").and_then(|v| v.as_str()).unwrap_or("");
+            let related_api = args.get("related_api").and_then(|v| v.as_str());
+            
+            if category.is_empty() || scenario.is_empty() || solution.is_empty() {
+                return Ok(serde_json::json!({ "error": "请提供 category、scenario、solution 参数" }));
+            }
+            
+            match db.report_issue(category, task, scenario, solution, related_api) {
+                Ok(id) => Ok(serde_json::json!({
+                    "status": "success",
+                    "issue_id": id,
+                    "message": format!("已记录问题，ID: {}", id)
+                })),
+                Err(e) => Ok(serde_json::json!({ "error": format!("记录失败: {}", e) })),
+            }
         })
     })
 }

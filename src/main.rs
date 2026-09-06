@@ -7,6 +7,7 @@ mod mcp;
 mod tools;
 mod exec;
 mod db;
+mod memory;
 mod management;
 mod web_admin;
 
@@ -40,6 +41,22 @@ async fn main() {
 
     let count = manager.count().await;
     info!("加载了 {} 个工具", count);
+
+    // 自动归档超过30天的记忆
+    {
+        use crate::db::MemoryStore;
+        let db_ref = manager.db();
+        match db_ref.archive(30) {
+            Ok(archived) => {
+                if archived > 0 {
+                    info!("自动归档了 {} 条旧记忆", archived);
+                }
+            }
+            Err(e) => {
+                tracing::warn!("自动归档记忆失败: {}", e);
+            }
+        }
+    }
 
     let exe_dir = std::env::current_exe()
         .ok()
