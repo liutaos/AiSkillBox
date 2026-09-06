@@ -55,6 +55,23 @@ AI assistants can use these skills
 | Restore | Deleted by mistake? One-click restore from trash |
 | Search | Quick find by keyword/tag |
 
+### Memory System
+
+| Action | Description |
+|--------|-------------|
+| remember | Save memory (auto-archive old memories after 30 days) |
+| recall | Search memory (FTS5 full-text search) |
+| forget | Delete memory |
+| archive | Archive old memories |
+| get_memory_stats | Get memory statistics |
+
+### Issue Library
+
+| Action | Description |
+|--------|-------------|
+| search_issues | Search issues (filter by category/task) |
+| report_issue | Record new issues |
+
 ### Three Management Methods
 
 | Method | For whom |
@@ -124,6 +141,13 @@ AISkillBox/
 | `delete_skill` | Delete skill (move to trash) |
 | `restore_skill` | Restore from trash |
 | `refresh_skills` | Refresh skill list |
+| `remember` | Save memory |
+| `recall` | Search memory |
+| `forget` | Delete memory |
+| `archive_memories` | Archive old memories |
+| `get_memory_stats` | Get memory statistics |
+| `search_issues` | Search issues |
+| `report_issue` | Record new issues |
 
 ### Configuration
 

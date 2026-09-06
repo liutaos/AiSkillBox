@@ -55,6 +55,23 @@ AI 助手可以使用这些技能
 | 恢复 | 删错了？回收站一键恢复 |
 | 搜索 | 关键词/标签快速找到 |
 
+### 记忆系统
+
+| 操作 | 说明 |
+|------|------|
+| remember | 保存记忆（自动归档30天前的旧记忆） |
+| recall | 搜索记忆（支持FTS5全文搜索） |
+| forget | 删除记忆 |
+| archive | 归档旧记忆 |
+| get_memory_stats | 获取记忆统计 |
+
+### 问题库
+
+| 操作 | 说明 |
+|------|------|
+| search_issues | 搜索问题（按分类/任务过滤） |
+| report_issue | 记录新问题 |
+
 ### 三种管理方式
 
 | 方式 | 适合谁 |
@@ -124,6 +141,13 @@ AISkillBox/
 | `delete_skill` | 删除技能（进回收站） |
 | `restore_skill` | 从回收站恢复 |
 | `refresh_skills` | 刷新技能列表 |
+| `remember` | 保存记忆 |
+| `recall` | 搜索记忆 |
+| `forget` | 删除记忆 |
+| `archive_memories` | 归档旧记忆 |
+| `get_memory_stats` | 获取记忆统计 |
+| `search_issues` | 搜索问题 |
+| `report_issue` | 记录新问题 |
 
 ### 配置文件
 
