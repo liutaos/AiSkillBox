@@ -57,29 +57,39 @@ pub async fn restart_service(depot: &mut Depot, res: &mut Response) {
     
     tracing::info!("收到重启请求，开始重启 MCP 服务...");
     
-    // 用 cmd 启动守护脚本：等3秒 → 杀旧进程 → 等2秒 → 启动新进程
     let exe_path = exe_dir.join("AISkillBox-mcp.exe");
-    let cmd_script = format!(
-        "timeout /t 3 /nobreak >nul & taskkill /F /IM AISkillBox-mcp.exe >nul 2>&1 & timeout /t 2 /nobreak >nul & start \"\" \"{}\"",
-        exe_path.to_string_lossy()
+    
+    // PowerShell 完全静默执行，无任何窗口
+    let ps_script = format!(
+        "Start-Sleep -Seconds 3; \
+         Stop-Process -Name AISkillBox-mcp -Force -ErrorAction SilentlyContinue; \
+         Start-Sleep -Seconds 2; \
+         Start-Process -FilePath '{exe}' -WindowStyle Hidden",
+        exe = exe_path.to_string_lossy()
     );
     
-    tracing::info!("启动守护进程: {}", cmd_script);
-    
     use std::os::windows::process::CommandExt;
-    let _ = std::process::Command::new("cmd")
-        .args(["/C", &cmd_script])
-        .creation_flags(0x08000000) // CREATE_NO_WINDOW
+    let result = std::process::Command::new("powershell")
+        .args(["-WindowStyle", "Hidden", "-Command", &ps_script])
+        .creation_flags(0x08000000)
         .spawn();
     
-    // 等待守护进程启动完成，确保响应能发出
-    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
-    
-    // 返回响应
-    res.render(Json(serde_json::json!({
-        "success": true,
-        "message": "正在重启服务..."
-    })));
+    match result {
+        Ok(_) => {
+            tracing::info!("重启守护已启动");
+            res.render(Json(serde_json::json!({
+                "success": true,
+                "message": "正在重启服务..."
+            })));
+        }
+        Err(e) => {
+            tracing::error!("启动重启守护失败: {}", e);
+            res.render(Json(serde_json::json!({
+                "success": false,
+                "message": format!("启动重启脚本失败: {}", e)
+            })));
+        }
+    }
 }
 
 #[handler]
