@@ -4,7 +4,7 @@
 
 use std::process::Command;
 use std::os::windows::process::CommandExt;
-use tracing::info;
+use tracing::{info, error};
 
 pub fn check_service_running() -> bool {
     let output = Command::new("tasklist")
@@ -27,23 +27,48 @@ pub fn is_port_in_use(addr: &str) -> bool {
 }
 
 pub fn start_service(exe_dir: &std::path::Path) -> Result<String, String> {
+    info!("尝试启动 MCP 服务，exe_dir: {:?}", exe_dir);
+    
     if check_service_running() {
+        info!("MCP 服务已经在运行");
         return Ok("MCP 服务已经在运行".to_string());
     }
     
     let exe_path = exe_dir.join("AISkillBox-mcp.exe");
+    info!("MCP 服务程序路径: {:?}", exe_path);
+    
     if !exe_path.exists() {
-        return Err(format!("MCP 服务程序不存在: {:?}", exe_path));
+        let msg = format!("MCP 服务程序不存在: {:?}", exe_path);
+        error!("{}", msg);
+        return Err(msg);
     }
     
-    Command::new(&exe_path)
+    // 检查端口是否被占用
+    if is_port_in_use("127.0.0.1:10881") {
+        info!("端口 10881 被占用，等待释放...");
+        std::thread::sleep(std::time::Duration::from_millis(1000));
+    }
+    
+    match Command::new(&exe_path)
         .current_dir(exe_dir)
         .creation_flags(0x08000000)
-        .spawn()
-        .map_err(|e| format!("启动 MCP 服务失败: {}", e))?;
-    
-    info!("MCP 服务已启动");
-    Ok("MCP 服务已启动".to_string())
+        .spawn() {
+        Ok(_) => {
+            info!("MCP 服务已启动");
+            // 等待服务真正启动
+            std::thread::sleep(std::time::Duration::from_millis(500));
+            if check_service_running() {
+                Ok("MCP 服务已启动".to_string())
+            } else {
+                Err("MCP 服务启动后未检测到进程".to_string())
+            }
+        }
+        Err(e) => {
+            let msg = format!("启动 MCP 服务失败: {}", e);
+            error!("{}", msg);
+            Err(msg)
+        }
+    }
 }
 
 pub fn stop_service() -> Result<String, String> {
