@@ -58,6 +58,17 @@ pub fn stop_service() -> Result<String, String> {
 
 pub fn restart_service(exe_dir: &std::path::Path) -> Result<String, String> {
     let _ = stop_service();
+    
+    // 等待端口释放
+    for _ in 0..20 {
+        std::thread::sleep(std::time::Duration::from_millis(200));
+        if !check_service_running() {
+            break;
+        }
+    }
+    
+    // 额外等待确保端口完全释放
     std::thread::sleep(std::time::Duration::from_millis(500));
+    
     start_service(exe_dir)
 }

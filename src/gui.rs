@@ -548,10 +548,20 @@ impl eframe::App for App {
                                 if stop_btn.clicked() && self.service_running {
                                     self.stop_service();
                                 }
-                                if ui.button("重启").clicked() {
-                                    self.stop_service();
-                                    self.start_service();
+                            if ui.button("重启").clicked() {
+                                self.status_msg = "正在重启...".to_string();
+                                let _ = service_ctrl::stop_service();
+                                // 等待服务停止
+                                for _ in 0..20 {
+                                    std::thread::sleep(std::time::Duration::from_millis(200));
+                                    if !service_ctrl::check_service_running() {
+                                        break;
+                                    }
                                 }
+                                // 额外等待端口释放
+                                std::thread::sleep(std::time::Duration::from_millis(500));
+                                self.start_service();
+                            }
                                 if ui.button("刷新状态").clicked() {
                                     self.refresh_status(ctx);
                                 }
@@ -668,7 +678,17 @@ impl eframe::App for App {
                                 self.stop_service();
                             }
                             if ui.button("重启").clicked() {
-                                self.stop_service();
+                                self.status_msg = "正在重启...".to_string();
+                                let _ = service_ctrl::stop_service();
+                                // 等待服务停止
+                                for _ in 0..20 {
+                                    std::thread::sleep(std::time::Duration::from_millis(200));
+                                    if !service_ctrl::check_service_running() {
+                                        break;
+                                    }
+                                }
+                                // 额外等待端口释放
+                                std::thread::sleep(std::time::Duration::from_millis(500));
                                 self.start_service();
                             }
                             if ui.button("刷新状态").clicked() {

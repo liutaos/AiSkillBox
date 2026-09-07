@@ -55,14 +55,40 @@ pub async fn stop_service(_req: &mut Request, res: &mut Response) {
 pub async fn restart_service(depot: &mut Depot, res: &mut Response) {
     let exe_dir = depot.get_typed::<PathBuf>().unwrap();
     
-    match service_ctrl::restart_service(exe_dir) {
+    tracing::info!("正在重启 MCP 服务...");
+    
+    // 先停止服务
+    match service_ctrl::stop_service() {
         Ok(msg) => {
+            tracing::info!("停止服务: {}", msg);
+        }
+        Err(e) => {
+            tracing::warn!("停止服务时出错: {}", e);
+        }
+    }
+    
+    // 等待服务完全停止
+    for _ in 0..20 {
+        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+        if !service_ctrl::check_service_running() {
+            break;
+        }
+    }
+    
+    // 额外等待端口释放
+    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+    
+    // 启动服务
+    match service_ctrl::start_service(&exe_dir) {
+        Ok(msg) => {
+            tracing::info!("重启完成: {}", msg);
             res.render(Json(serde_json::json!({
                 "success": true,
                 "message": msg
             })));
         }
         Err(e) => {
+            tracing::error!("启动服务失败: {}", e);
             res.status_code(StatusCode::INTERNAL_SERVER_ERROR);
             res.render(Json(serde_json::json!({
                 "success": false,
