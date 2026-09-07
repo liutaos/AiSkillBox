@@ -57,53 +57,29 @@ pub async fn restart_service(depot: &mut Depot, res: &mut Response) {
     
     tracing::info!("收到重启请求，开始重启 MCP 服务...");
     
-    // 先返回响应，让客户端知道请求已接受
+    // 用 cmd 启动守护脚本：等3秒 → 杀旧进程 → 等2秒 → 启动新进程
+    let exe_path = exe_dir.join("AISkillBox-mcp.exe");
+    let cmd_script = format!(
+        "timeout /t 3 /nobreak >nul & taskkill /F /IM AISkillBox-mcp.exe >nul 2>&1 & timeout /t 2 /nobreak >nul & start \"\" \"{}\"",
+        exe_path.to_string_lossy()
+    );
+    
+    tracing::info!("启动守护进程: {}", cmd_script);
+    
+    use std::os::windows::process::CommandExt;
+    let _ = std::process::Command::new("cmd")
+        .args(["/C", &cmd_script])
+        .creation_flags(0x08000000) // CREATE_NO_WINDOW
+        .spawn();
+    
+    // 等待守护进程启动完成，确保响应能发出
+    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+    
+    // 返回响应
     res.render(Json(serde_json::json!({
         "success": true,
         "message": "正在重启服务..."
     })));
-    
-    // 在后台执行重启
-    let exe_dir_clone = exe_dir.clone();
-    tokio::spawn(async move {
-        // 先停止服务
-        match service_ctrl::stop_service() {
-            Ok(msg) => {
-                tracing::info!("停止服务: {}", msg);
-            }
-            Err(e) => {
-                tracing::warn!("停止服务时出错: {}", e);
-            }
-        }
-        
-        // 等待服务完全停止
-        let mut stopped = false;
-        for i in 0..30 {
-            tokio::time::sleep(std::time::Duration::from_millis(200)).await;
-            if !service_ctrl::check_service_running() {
-                tracing::info!("服务已停止，等待了 {}ms", (i + 1) * 200);
-                stopped = true;
-                break;
-            }
-        }
-        
-        if !stopped {
-            tracing::warn!("服务停止超时，继续尝试启动...");
-        }
-        
-        // 额外等待端口释放
-        tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
-        
-        // 启动服务
-        match service_ctrl::start_service(&exe_dir_clone) {
-            Ok(msg) => {
-                tracing::info!("重启完成: {}", msg);
-            }
-            Err(e) => {
-                tracing::error!("启动服务失败: {}", e);
-            }
-        }
-    });
 }
 
 #[handler]
