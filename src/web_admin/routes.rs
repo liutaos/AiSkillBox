@@ -52,11 +52,13 @@ pub fn create_router(
                 .push(Router::with_path("issues/search").post(memory::search_issues))
                 .push(Router::with_path("issues/delete").post(memory::delete_issue))
         )
+        // Web Admin 管理后台
         .push(
             Router::with_path("web-admin/{*path}").get(
                 StaticDir::new([web_admin_dir]).fallback("index.html")
             )
         )
+        // 关于页面 - 根路径
         .push(
             Router::with_path("{*path}").get(
                 StaticDir::new([public_dir]).fallback("index.html")
