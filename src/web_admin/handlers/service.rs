@@ -55,58 +55,55 @@ pub async fn stop_service(_req: &mut Request, res: &mut Response) {
 pub async fn restart_service(depot: &mut Depot, res: &mut Response) {
     let exe_dir = depot.get_typed::<PathBuf>().unwrap();
     
-    tracing::info!("正在重启 MCP 服务...");
+    tracing::info!("收到重启请求，开始重启 MCP 服务...");
     
-    // 先停止服务
-    match service_ctrl::stop_service() {
-        Ok(msg) => {
-            tracing::info!("停止服务: {}", msg);
+    // 先返回响应，让客户端知道请求已接受
+    res.render(Json(serde_json::json!({
+        "success": true,
+        "message": "正在重启服务..."
+    })));
+    
+    // 在后台执行重启
+    let exe_dir_clone = exe_dir.clone();
+    tokio::spawn(async move {
+        // 先停止服务
+        match service_ctrl::stop_service() {
+            Ok(msg) => {
+                tracing::info!("停止服务: {}", msg);
+            }
+            Err(e) => {
+                tracing::warn!("停止服务时出错: {}", e);
+            }
         }
-        Err(e) => {
-            tracing::warn!("停止服务时出错: {}", e);
+        
+        // 等待服务完全停止
+        let mut stopped = false;
+        for i in 0..30 {
+            tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+            if !service_ctrl::check_service_running() {
+                tracing::info!("服务已停止，等待了 {}ms", (i + 1) * 200);
+                stopped = true;
+                break;
+            }
         }
-    }
-    
-    // 等待服务完全停止
-    let mut stopped = false;
-    for i in 0..30 {
-        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
-        if !service_ctrl::check_service_running() {
-            tracing::info!("服务已停止，等待了 {}ms", (i + 1) * 200);
-            stopped = true;
-            break;
+        
+        if !stopped {
+            tracing::warn!("服务停止超时，继续尝试启动...");
         }
-    }
-    
-    if !stopped {
-        tracing::warn!("服务停止超时，继续尝试启动...");
-    }
-    
-    // 额外等待端口释放
-    tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
-    
-    // 检查端口是否释放
-    let port_available = !service_ctrl::is_port_in_use("127.0.0.1:10881");
-    tracing::info!("端口 10881 可用: {}", port_available);
-    
-    // 启动服务
-    match service_ctrl::start_service(&exe_dir) {
-        Ok(msg) => {
-            tracing::info!("重启完成: {}", msg);
-            res.render(Json(serde_json::json!({
-                "success": true,
-                "message": msg
-            })));
+        
+        // 额外等待端口释放
+        tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
+        
+        // 启动服务
+        match service_ctrl::start_service(&exe_dir_clone) {
+            Ok(msg) => {
+                tracing::info!("重启完成: {}", msg);
+            }
+            Err(e) => {
+                tracing::error!("启动服务失败: {}", e);
+            }
         }
-        Err(e) => {
-            tracing::error!("启动服务失败: {}", e);
-            res.status_code(StatusCode::INTERNAL_SERVER_ERROR);
-            res.render(Json(serde_json::json!({
-                "success": false,
-                "message": e
-            })));
-        }
-    }
+    });
 }
 
 #[handler]

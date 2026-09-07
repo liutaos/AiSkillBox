@@ -34,7 +34,7 @@ export const disableSkill = (skill_name) => api.post('/disable', { skill_name })
 // 服务控制
 export const startService = () => api.post('/start')
 export const stopService = () => api.post('/stop')
-export const restartService = () => api.post('/restart')
+export const restartService = () => api.post('/restart', null, { timeout: 30000 })
 export const getStatus = () => api.get('/status')
 export const refreshSkills = () => api.post('/refresh')
 

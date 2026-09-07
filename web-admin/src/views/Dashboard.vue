@@ -158,7 +158,27 @@ const handleRestart = async () => {
   loading.value.restart = true
   try {
     await restartService()
-    message.success('服务重启成功')
+    message.info('正在重启服务，请稍候...')
+    
+    // 轮询等待服务启动
+    let retries = 0
+    const maxRetries = 15
+    while (retries < maxRetries) {
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      try {
+        const statusRes = await getStatus()
+        if (statusRes.data?.running) {
+          message.success('服务重启成功')
+          await fetchData()
+          return
+        }
+      } catch (e) {
+        // 服务可能还在启动中
+      }
+      retries++
+    }
+    
+    message.warning('重启超时，请刷新状态查看')
     await fetchData()
   } catch (error) {
     message.error('重启失败: ' + error.message)
