@@ -68,15 +68,26 @@ pub async fn restart_service(depot: &mut Depot, res: &mut Response) {
     }
     
     // 等待服务完全停止
-    for _ in 0..20 {
+    let mut stopped = false;
+    for i in 0..30 {
         tokio::time::sleep(std::time::Duration::from_millis(200)).await;
         if !service_ctrl::check_service_running() {
+            tracing::info!("服务已停止，等待了 {}ms", (i + 1) * 200);
+            stopped = true;
             break;
         }
     }
     
+    if !stopped {
+        tracing::warn!("服务停止超时，继续尝试启动...");
+    }
+    
     // 额外等待端口释放
-    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+    tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
+    
+    // 检查端口是否释放
+    let port_available = !service_ctrl::is_port_in_use("127.0.0.1:10881");
+    tracing::info!("端口 10881 可用: {}", port_available);
     
     // 启动服务
     match service_ctrl::start_service(&exe_dir) {

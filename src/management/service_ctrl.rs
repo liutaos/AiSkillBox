@@ -21,6 +21,11 @@ pub fn check_service_running() -> bool {
     }
 }
 
+pub fn is_port_in_use(addr: &str) -> bool {
+    use std::net::TcpListener;
+    TcpListener::bind(addr).is_err()
+}
+
 pub fn start_service(exe_dir: &std::path::Path) -> Result<String, String> {
     if check_service_running() {
         return Ok("MCP 服务已经在运行".to_string());

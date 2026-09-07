@@ -681,14 +681,15 @@ impl eframe::App for App {
                                 self.status_msg = "正在重启...".to_string();
                                 let _ = service_ctrl::stop_service();
                                 // 等待服务停止
-                                for _ in 0..20 {
+                                for i in 0..30 {
                                     std::thread::sleep(std::time::Duration::from_millis(200));
                                     if !service_ctrl::check_service_running() {
+                                        self.status_msg = format!("服务已停止，等待了{}ms", (i + 1) * 200);
                                         break;
                                     }
                                 }
                                 // 额外等待端口释放
-                                std::thread::sleep(std::time::Duration::from_millis(500));
+                                std::thread::sleep(std::time::Duration::from_millis(1000));
                                 self.start_service();
                             }
                             if ui.button("刷新状态").clicked() {
