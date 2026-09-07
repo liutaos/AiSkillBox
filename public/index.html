@@ -117,7 +117,8 @@
         <!-- MCP 工具 -->
         <div class="section-title">MCP 工具</div>
         <div class="card">
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 24px;">
+            <h3>技能管理</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 24px; margin-bottom: 16px;">
                 <div class="tool-item">
                     <p><span class="tool-name">list_skills</span></p>
                     <p style="font-size:13px;color:#888;">列出所有 Skill</p>
@@ -150,9 +151,41 @@
                     <p><span class="tool-name">refresh_skills</span></p>
                     <p style="font-size:13px;color:#888;">刷新 Skill 列表</p>
                 </div>
+            </div>
+            
+            <h3>记忆系统</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 24px; margin-bottom: 16px;">
                 <div class="tool-item">
-                    <p><span class="tool-name">migrate_skills</span></p>
-                    <p style="font-size:13px;color:#888;">迁移指引</p>
+                    <p><span class="tool-name">remember</span></p>
+                    <p style="font-size:13px;color:#888;">保存记忆</p>
+                </div>
+                <div class="tool-item">
+                    <p><span class="tool-name">recall</span></p>
+                    <p style="font-size:13px;color:#888;">搜索记忆（FTS5全文搜索）</p>
+                </div>
+                <div class="tool-item">
+                    <p><span class="tool-name">forget</span></p>
+                    <p style="font-size:13px;color:#888;">删除记忆</p>
+                </div>
+                <div class="tool-item">
+                    <p><span class="tool-name">archive_memories</span></p>
+                    <p style="font-size:13px;color:#888;">归档旧记忆</p>
+                </div>
+                <div class="tool-item">
+                    <p><span class="tool-name">get_memory_stats</span></p>
+                    <p style="font-size:13px;color:#888;">获取记忆统计</p>
+                </div>
+            </div>
+            
+            <h3>问题库</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 24px;">
+                <div class="tool-item">
+                    <p><span class="tool-name">search_issues</span></p>
+                    <p style="font-size:13px;color:#888;">搜索问题</p>
+                </div>
+                <div class="tool-item">
+                    <p><span class="tool-name">report_issue</span></p>
+                    <p style="font-size:13px;color:#888;">记录新问题</p>
                 </div>
             </div>
         </div>
@@ -166,7 +199,7 @@
 ├── public/          # 本说明页
 ├── web-admin/       # Web 管理后台
 ├── config.toml      # 配置文件
-└── skills.db        # SQLite 数据库</pre>
+└── skills.db        # SQLite 数据库（技能+记忆+问题）</pre>
         </div>
 
         <!-- 常见问题 -->
