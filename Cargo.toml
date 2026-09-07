@@ -4,7 +4,7 @@
 
 [package]
 name = "skill-manager-mcp"
-version = "1.1.0"
+version = "1.2.0"
 edition = "2024"
 rust-version = "1.89"
 description = "自动注册和管理 Skill 的 MCP 服务"
