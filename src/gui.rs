@@ -250,7 +250,7 @@ impl App {
     }
 
     fn open_browser_about(&self) {
-        let url = format!("http://{}:{}/web-admin/", self.browser_host(), self.web_port);
+        let url = format!("http://{}:{}", self.browser_host(), self.web_port);
         use std::os::windows::process::CommandExt;
         std::process::Command::new("cmd")
             .args(["/C", "start", &url])
