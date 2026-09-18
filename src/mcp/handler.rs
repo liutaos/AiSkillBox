@@ -31,7 +31,7 @@ impl ServerHandler for EcMcpHandler {
             .build();
 
         ServerInfo::new(capabilities)
-            .with_server_info(Implementation::new("easyclick-mcp-extension", "0.1.0"))
+            .with_server_info(Implementation::new("aiskillbox-mcp", "0.1.0"))
             .with_instructions(r#"# AI 技能百宝箱
 
 ## 记忆系统（必须遵守）

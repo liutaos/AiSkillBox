@@ -219,7 +219,7 @@ Copyright (c) Mr_老鬼. All rights reserved.
 ```
 AISkillBox/
 ├── skills/           # 技能文件夹（用户存放）
-│   ├── easyclick-android/
+│   ├── example-skill/
 │   │   └── SKILL.md
 │   └── ...
 ├── skill-trash/      # 回收站
